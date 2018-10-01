@@ -1,0 +1,102 @@
+package com.ubirch.protocol.codec;
+
+import com.ubirch.protocol.ProtocolException;
+import com.ubirch.protocol.ProtocolFixtures;
+import com.ubirch.protocol.ProtocolMessage;
+import com.ubirch.protocol.ProtocolMessageEnvelope;
+import org.junit.jupiter.api.Test;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageUnpacker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Test the implementations of {@link com.ubirch.protocol.codec.MsgPackProtocolEncoder}.
+ *
+ * @author Matthias L. Jugel
+ */
+class MsgPackProtocolEncoderTest extends ProtocolFixtures {
+	private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolEncoderTest.class);
+
+	@Test
+	void testMsgPackProtocolEncoderInstance() {
+		ProtocolEncoder<ProtocolMessageEnvelope, byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+		assertNotNull(encoder, "encoder should not be null");
+		assertEquals(encoder, MsgPackProtocolEncoder.getEncoder(), "encoder should be a singleton");
+	}
+
+	@Test
+	void testMsgPackProtocolEncoderEmptyEnvelopeException() {
+		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(null);
+		assertThrows(ProtocolException.class, () -> encoder.encode(envelope, (uuid, data, offset, len) -> null));
+	}
+
+
+	@Test
+	void testMsgPackProtocolEncoderVersionException() {
+		ProtocolMessage pm = new ProtocolMessage(0, testUUID, 0xEF, 1);
+		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
+		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+		assertThrows(ProtocolException.class, () -> encoder.encode(envelope, (uuid, data, offset, len) -> null));
+	}
+
+	@Test
+	void testMsgPackProtocolEncoderArgumentExceptions() {
+		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
+		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
+		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+
+		// check argument exceptions
+		assertThrows(IllegalArgumentException.class, () -> encoder.encode(envelope, null));
+		assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, (uuid, data, offset, len) -> null));
+		assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, null));
+	}
+
+	@Test
+	void testMsgPackProtocolEncoderEncode() throws NoSuchAlgorithmException, SignatureException, IOException {
+		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
+		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
+		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+
+		MessageDigest digest = MessageDigest.getInstance("SHA-512");
+		byte[] msg = encoder.encode(envelope, (uuid, data, offset, len) -> {
+			digest.update(data, offset, len);
+			return digest.digest();
+		});
+
+		byte[] expectedMessage = Arrays.copyOfRange(expectedSignedMessage, 0, expectedSignedMessage.length - 67);
+		byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 67);
+		assertArrayEquals(expectedMessage, actualMessage);
+
+		MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
+		assertEquals(5, unpacker.unpackArrayHeader());
+		assertEquals(ProtocolMessage.SIGNED, unpacker.unpackInt());
+		assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackRawStringHeader()));
+		assertEquals(0xEF, unpacker.unpackInt());
+		assertEquals(1, unpacker.unpackInt());
+		// check the SHA-512 digest of the message (fake signature)
+		assertArrayEquals(expectedSignedMessageHash, unpacker.readPayload(unpacker.unpackRawStringHeader()));
+	}
+
+	@Test
+	void testMsgPackProtocolEncoderInvalidKeyException() {
+		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 2, 3);
+
+		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
+		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+
+		assertThrows(ProtocolException.class, () -> encoder.encode(envelope, (uuid, data, offset, len) -> {
+			throw new InvalidKeyException("test exception");
+		}));
+	}
+}
