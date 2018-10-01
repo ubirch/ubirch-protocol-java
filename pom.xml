@@ -53,7 +53,7 @@
 
   <scm>
     <connection>scm:git:git://github.com/ubirch/ubirch-protocol-java.git</connection>
-    <developerConnection>scm:git:ssh://github.com:ubirch/ubirch-protocol-java.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:ubirch/ubirch-protocol-java.git</developerConnection>
     <url>http://github.com/ubirch/ubirch-protocol-java</url>
   </scm>
 
