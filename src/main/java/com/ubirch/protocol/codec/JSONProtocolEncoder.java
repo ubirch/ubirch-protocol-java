@@ -18,7 +18,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class JSONProtocolEncoder implements ProtocolEncoder<ProtocolMessageEnvelope, String> {
+public class JSONProtocolEncoder implements ProtocolEncoder<String> {
 	private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
 	private ObjectMapper mapper = new ObjectMapper();
 
@@ -31,14 +31,9 @@ public class JSONProtocolEncoder implements ProtocolEncoder<ProtocolMessageEnvel
 	}
 
 	@Override
-	public String encode(ProtocolMessageEnvelope envelope, ProtocolSigner signer) throws ProtocolException, SignatureException {
-		if(envelope == null || signer == null) {
-			throw new IllegalArgumentException("envelope or signer null");
-		}
-
-		ProtocolMessage pm = envelope.getMessage();
-		if(pm == null) {
-			throw new ProtocolException("empty mesage can't be encoded: "+envelope);
+	public String encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
+		if(pm == null || signer == null) {
+			throw new IllegalArgumentException("message or signer null");
 		}
 
 		int protocolVersion = pm.getVersion();
@@ -50,8 +45,7 @@ public class JSONProtocolEncoder implements ProtocolEncoder<ProtocolMessageEnvel
 			byte[] bytesToSign = mapper.writeValueAsBytes(pm.getPayload());
 			byte[] signature = signer.sign(pm.getUUID(), bytesToSign, 0, bytesToSign.length);
 			pm.setSignature(signature);
-			envelope.setRaw(mapper.writeValueAsBytes(pm));
-			return new String(envelope.getRaw(), StandardCharsets.UTF_8);
+			return new String(mapper.writeValueAsBytes(pm), StandardCharsets.UTF_8);
 		} catch (JsonProcessingException e) {
 			throw new ProtocolException("json encoding failed", e);
 		} catch (InvalidKeyException e) {

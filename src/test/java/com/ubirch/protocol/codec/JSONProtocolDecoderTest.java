@@ -25,7 +25,7 @@ class JSONProtocolDecoderTest extends ProtocolFixtures {
 
 	@Test
 	void testJSONProtocolDecoderInstance() {
-		ProtocolDecoder<ProtocolMessageEnvelope, String> decoder = JSONProtocolDecoder.getDecoder();
+		ProtocolDecoder<String> decoder = JSONProtocolDecoder.getDecoder();
 		assertNotNull(decoder, "decoder should not be null");
 		assertEquals(decoder, JSONProtocolDecoder.getDecoder(), "decoder should be a singleton");
 	}
@@ -59,10 +59,9 @@ class JSONProtocolDecoderTest extends ProtocolFixtures {
 
 	@Test
 	void testJSONProtocolDecoderVerifySignedMessage() throws SignatureException, ProtocolException {
-		ProtocolMessageEnvelope envelope = JSONProtocolDecoder.getDecoder()
+		ProtocolMessage pm = JSONProtocolDecoder.getDecoder()
 						.decode(expectedSignedMessageJson, (uuid, data, offset, len, signature) -> true);
 
-		ProtocolMessage pm = envelope.getMessage();
 		assertNotNull(pm, "protocol message must not be null");
 
 		assertEquals(ProtocolMessage.SIGNED, pm.getVersion());

@@ -11,11 +11,10 @@ import java.security.SignatureException;
  * Generally they will decode to a {@link ProtocolMessage}, but in case of a verification, may also
  * return a special envelope type with extra information.
  *
- * @param <R> the envelope return type of a decode and verify operation
  * @param <T> the type of the source message
  * @author Matthias L. Jugel
  */
-public interface ProtocolDecoder<R, T> {
+public interface ProtocolDecoder<T> {
 	/**
 	 * Decode and verify this message.
 	 *
@@ -25,7 +24,7 @@ public interface ProtocolDecoder<R, T> {
 	 * @throws ProtocolException if some json processing issue occurs, or the crypto functions fail (no signature verification)
 	 * @throws SignatureException if the signature verification cannot be done for some reason
 	 */
-	R decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException;
+	ProtocolMessage decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException;
 
 	/**
 	 * Decode a protocol messsage without decoding, just taking the pieces apart.

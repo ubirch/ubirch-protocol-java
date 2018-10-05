@@ -18,7 +18,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class JSONProtocolDecoder implements ProtocolDecoder<ProtocolMessageEnvelope, String> {
+public class JSONProtocolDecoder implements ProtocolDecoder<String> {
 	private final ObjectMapper mapper = new ObjectMapper();
 
 	private static JSONProtocolDecoder instance = new JSONProtocolDecoder();
@@ -27,15 +27,13 @@ public class JSONProtocolDecoder implements ProtocolDecoder<ProtocolMessageEnvel
 		return instance;
 	}
 
-	public ProtocolMessageEnvelope decode(String message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(decode(message));
+	public ProtocolMessage decode(String message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
+		ProtocolMessage pm = decode(message);
 		try {
-			byte[] bytesToVerify = mapper.writeValueAsBytes(envelope.getMessage().getPayload());
-			if (!verifier.verify(envelope.getMessage().getUUID(), bytesToVerify, 0, bytesToVerify.length,
-							envelope.getMessage().getSignature()))
-				throw new SignatureException(String.format("signature verification failed: %s", envelope.getMessage()));
-			envelope.setRaw(message.getBytes(StandardCharsets.UTF_8));
-			return envelope;
+			byte[] bytesToVerify = mapper.writeValueAsBytes(pm.getPayload());
+			if (!verifier.verify(pm.getUUID(), bytesToVerify, 0, bytesToVerify.length, pm.getSignature()))
+				throw new SignatureException(String.format("signature verification failed: %s", pm));
+			return pm;
 		} catch (JsonProcessingException e) {
 			throw new ProtocolException("json payload processing failed", e);
 		} catch (InvalidKeyException e) {

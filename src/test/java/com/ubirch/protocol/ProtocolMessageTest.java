@@ -25,8 +25,7 @@ class ProtocolMessageTest extends ProtocolFixtures {
 	@Test
 	void testEmptyProtocolMessage() {
 		ProtocolMessage pm = new ProtocolMessage();
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
-		assertEquals("Envelope(ProtocolMessage(v=0x0000,hint=0x00))", envelope.toString());
+		assertEquals("ProtocolMessage(v=0x0000,hint=0x00)", pm.toString());
 	}
 
 	@Test

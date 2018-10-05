@@ -23,7 +23,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
 
 	@Test
 	void testMsgPackProtocolDecoderInstance() {
-		ProtocolDecoder<ProtocolMessageEnvelope, byte[]> decoder = MsgPackProtocolDecoder.getDecoder();
+		ProtocolDecoder<byte[]> decoder = MsgPackProtocolDecoder.getDecoder();
 		assertNotNull(decoder, "decoder should not be null");
 		assertEquals(decoder, MsgPackProtocolDecoder.getDecoder(), "decoder should be a singleton");
 	}
@@ -64,10 +64,9 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
 
 	@Test
 	void testMsgPackProtocolDecoderVerifySignedMessage() throws SignatureException, ProtocolException {
-		ProtocolMessageEnvelope envelope = MsgPackProtocolDecoder.getDecoder()
+		ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder()
 						.decode(expectedSignedMessage, (uuid, data, offset, len, signature) -> true);
 
-		ProtocolMessage pm = envelope.getMessage();
 		assertNotNull(pm, "protocol message must not be null");
 
 		assertEquals(ProtocolMessage.SIGNED, pm.getVersion());
@@ -99,7 +98,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
 		// create a broken json node and set the payload to force a JsonProcessingException
 		MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
 		assertThrows(ProtocolException.class, () ->
-						decoder.decode(new byte[] {(byte) 0x91, 0x01}, (uuid, data, offset, len, signature) -> true));
+						decoder.decode(new byte[]{(byte) 0x91, 0x01}, (uuid, data, offset, len, signature) -> true));
 	}
 
 }

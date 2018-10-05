@@ -17,6 +17,11 @@ public class ProtocolMessageEnvelope {
 		this.setMessage(pm);
 	}
 
+	public ProtocolMessageEnvelope(ProtocolMessage pm, byte[] raw) {
+		this.setMessage(pm);
+		this.setRaw(raw);
+	}
+
 	@Override
 	public String toString() {
 		return "Envelope(" + getMessage() + (getRaw() != null ? "," + Hex.encodeHexString(getRaw()) : "") + ")";

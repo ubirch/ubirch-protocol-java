@@ -50,8 +50,7 @@ public class ProtocolTest extends ProtocolFixtures {
 		Protocol p = new TestProtocol();
 
 		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
-		byte[] message = p.encodeSign(envelope, Protocol.Format.MSGPACK_V1);
+		byte[] message = p.encodeSign(pm, Protocol.Format.MSGPACK_V1);
 		logger.debug(String.format("MESSAGE: %s", Hex.encodeHexString(message)));
 
 		assertArrayEquals(expectedSignedMessage, message);
@@ -63,8 +62,7 @@ public class ProtocolTest extends ProtocolFixtures {
 
 		for (int i = 0; i < 3; i++) {
 			ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, testUUID, new byte[]{1, 2, 3}, 0xEE, i + 1);
-			ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
-			byte[] message = p.encodeSign(envelope, Protocol.Format.MSGPACK_V1);
+			byte[] message = p.encodeSign(pm, Protocol.Format.MSGPACK_V1);
 			logger.debug(String.format("EXPECTED: %s", Hex.encodeHexString(expectedChainedMessages.get(i))));
 			logger.debug(String.format("MESSAGE : %s", Hex.encodeHexString(message)));
 			assertArrayEquals(expectedChainedMessages.get(i), message, String.format("message %d failed", i + 1));
@@ -76,14 +74,14 @@ public class ProtocolTest extends ProtocolFixtures {
 		Protocol p = new TestProtocol();
 
 		assertDoesNotThrow(() -> {
-			ProtocolMessageEnvelope envelope = p.decodeVerify(expectedSignedMessage);
-			logger.debug(envelope.toString());
-			assertEquals(SIGNED, envelope.getMessage().version);
-			assertEquals(testUUID, envelope.getMessage().uuid);
-			assertEquals(0xEF, envelope.getMessage().hint);
+			ProtocolMessage pm = p.decodeVerify(expectedSignedMessage);
+			logger.debug(pm.toString());
+			assertEquals(SIGNED, pm.version);
+			assertEquals(testUUID, pm.uuid);
+			assertEquals(0xEF, pm.hint);
 			byte[] expectedSignature = Arrays.copyOfRange(expectedSignedMessage,
 							expectedSignedMessage.length - 64, expectedSignedMessage.length);
-			assertArrayEquals(expectedSignature, envelope.getMessage().signature);
+			assertArrayEquals(expectedSignature, pm.signature);
 		});
 	}
 
@@ -120,22 +118,22 @@ public class ProtocolTest extends ProtocolFixtures {
 
 			int msgNo = r.getCurrentRepetition() - 1;
 			byte[] message = expectedChainedMessages.get(msgNo);
-			ProtocolMessageEnvelope m = p.decodeVerify(message);
-			logger.debug(m.toString());
-			assertEquals(CHAINED, m.getMessage().version);
-			assertEquals(testUUID, m.getMessage().uuid);
+			ProtocolMessage pm = p.decodeVerify(message);
+			logger.debug(pm.toString());
+			assertEquals(CHAINED, pm.version);
+			assertEquals(testUUID, pm.uuid);
 			// check the chain signature (first is empty)
 			if (msgNo == 0) {
-				assertArrayEquals(new byte[64], m.getMessage().chain);
+				assertArrayEquals(new byte[64], pm.chain);
 			} else {
 				byte[] prev = expectedChainedMessages.get(msgNo - 1);
 				byte[] expectedChainSignature = Arrays.copyOfRange(prev, prev.length - 64, prev.length);
-				assertArrayEquals(expectedChainSignature, m.getMessage().chain);
+				assertArrayEquals(expectedChainSignature, pm.chain);
 			}
 
-			assertEquals(0xEE, m.getMessage().hint);
+			assertEquals(0xEE, pm.hint);
 			byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
-			assertArrayEquals(expectedSignature, m.getMessage().signature);
+			assertArrayEquals(expectedSignature, pm.signature);
 		});
 	}
 
@@ -144,8 +142,7 @@ public class ProtocolTest extends ProtocolFixtures {
 		Protocol p = new TestProtocol();
 
 		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
-		String encoded = new String(p.encodeSign(envelope, Protocol.Format.JSON_V1), StandardCharsets.UTF_8);
+		String encoded = new String(p.encodeSign(pm, Protocol.Format.JSON_V1), StandardCharsets.UTF_8);
 
 		assertEquals(expectedSignedMessageJson, encoded);
 	}
@@ -156,8 +153,7 @@ public class ProtocolTest extends ProtocolFixtures {
 
 		for (int i = 0; i < 3; i++) {
 			ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, testUUID, new byte[]{1, 2, 3}, 0xEE, i + 1);
-			ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(pm);
-			String message = new String(p.encodeSign(envelope, Protocol.Format.JSON_V1), StandardCharsets.UTF_8);
+			String message = new String(p.encodeSign(pm, Protocol.Format.JSON_V1), StandardCharsets.UTF_8);
 			logger.debug(String.format("EXPECTED: %s", expectedChainedMessagesJson.get(i)));
 			logger.debug(String.format("MESSAGE : %s", message));
 			assertEquals(expectedChainedMessagesJson.get(i), message, String.format("message %d failed", i + 1));
@@ -167,10 +163,10 @@ public class ProtocolTest extends ProtocolFixtures {
 	@Test
 	void testVerifyJSONMessage() throws NoSuchAlgorithmException, IOException, SignatureException {
 		Protocol p = new TestProtocol();
-		ProtocolMessageEnvelope envelope = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
-		assertEquals(SIGNED, envelope.getMessage().version);
-		assertEquals(testUUID, envelope.getMessage().uuid);
-		assertEquals(0xEF, envelope.getMessage().hint);
+		ProtocolMessage pm = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
+		assertEquals(SIGNED, pm.version);
+		assertEquals(testUUID, pm.uuid);
+		assertEquals(0xEF, pm.hint);
 	}
 
 
@@ -181,30 +177,30 @@ public class ProtocolTest extends ProtocolFixtures {
 		assertDoesNotThrow(() -> {
 			int msgNo = r.getCurrentRepetition() - 1;
 			String message = expectedChainedMessagesJson.get(msgNo);
-			ProtocolMessageEnvelope m = p.decodeVerify(message.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
-			logger.debug(m.toString());
-			assertEquals(CHAINED, m.getMessage().version);
-			assertEquals(testUUID, m.getMessage().uuid);
+			ProtocolMessage pm = p.decodeVerify(message.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
+			logger.debug(pm.toString());
+			assertEquals(CHAINED, pm.version);
+			assertEquals(testUUID, pm.uuid);
 			// check the chain signature (first is empty)
 			if (msgNo == 0) {
-				assertArrayEquals(new byte[64], m.getMessage().chain);
+				assertArrayEquals(new byte[64], pm.chain);
 			} else {
 				JsonNode prev = new ObjectMapper().readTree(expectedChainedMessagesJson.get(msgNo - 1));
 				byte[] expectedChainSignature = prev.get("signature").binaryValue();
-				assertArrayEquals(expectedChainSignature, m.getMessage().chain);
+				assertArrayEquals(expectedChainSignature, pm.chain);
 			}
 
-			assertEquals(0xEE, m.getMessage().hint);
+			assertEquals(0xEE, pm.hint);
 		});
 	}
 
 	@Test
 	void testVerifyJSONtoMsgPack() throws NoSuchAlgorithmException, IOException, SignatureException {
 		Protocol p = new TestProtocol();
-		ProtocolMessageEnvelope pm = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
-		assertEquals(SIGNED, pm.getMessage().version);
-		assertEquals(testUUID, pm.getMessage().uuid);
-		assertEquals(0xEF, pm.getMessage().hint);
+		ProtocolMessage pm = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
+		assertEquals(SIGNED, pm.version);
+		assertEquals(testUUID, pm.uuid);
+		assertEquals(0xEF, pm.hint);
 
 		// re-encode in msgpack and expect it to match the msgpack variant
 		assertArrayEquals(expectedSignedMessage, p.encodeSign(pm, Protocol.Format.MSGPACK_V1));

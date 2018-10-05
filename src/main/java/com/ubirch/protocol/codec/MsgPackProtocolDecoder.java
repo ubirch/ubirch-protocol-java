@@ -38,7 +38,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class MsgPackProtocolDecoder implements ProtocolDecoder<ProtocolMessageEnvelope, byte[]> {
+public class MsgPackProtocolDecoder implements ProtocolDecoder<byte[]> {
 	// from end: offset in bytes for the signature (including msgpack marker bytes)
 	public static final int SIGNATURE_OFFSET = 67;
 
@@ -57,15 +57,13 @@ public class MsgPackProtocolDecoder implements ProtocolDecoder<ProtocolMessageEn
 	 * @throws ProtocolException if the decoding or signature verification failed
 	 */
 	@Override
-	public ProtocolMessageEnvelope decode(byte[] message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(decode(message));
-		envelope.setRaw(message);
+	public ProtocolMessage decode(byte[] message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
+		ProtocolMessage pm = decode(message);
 
 		try {
-			if (!verifier.verify(envelope.getMessage().getUUID(), envelope.getRaw(), 0, envelope.getRaw().length - 67,
-							envelope.getMessage().getSignature()))
-				throw new SignatureException(String.format("signature verification failed: %s", envelope));
-			return envelope;
+			if (!verifier.verify(pm.getUUID(), message, 0, message.length - 67, pm.getSignature()))
+				throw new SignatureException(String.format("signature verification failed: %s", pm));
+			return pm;
 		} catch (InvalidKeyException e) {
 			throw new ProtocolException("invalid key", e);
 		}
