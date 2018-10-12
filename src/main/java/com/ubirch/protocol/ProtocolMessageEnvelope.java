@@ -1,6 +1,5 @@
 package com.ubirch.protocol;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.codec.binary.Hex;
 
 /**
@@ -11,6 +10,7 @@ import org.apache.commons.codec.binary.Hex;
 @SuppressWarnings("WeakerAccess")
 public class ProtocolMessageEnvelope {
 	protected byte[] raw = null;
+	protected byte[] signed = null;
 	protected ProtocolMessage message;
 
 	public ProtocolMessageEnvelope(ProtocolMessage pm) {
@@ -33,6 +33,14 @@ public class ProtocolMessageEnvelope {
 
 	public void setRaw(byte[] raw) {
 		this.raw = raw;
+	}
+
+	public byte[] getSigned() {
+		return signed;
+	}
+
+	public void setSigned(byte[] signed) {
+		this.signed = signed;
 	}
 
 	public ProtocolMessage getMessage() {
