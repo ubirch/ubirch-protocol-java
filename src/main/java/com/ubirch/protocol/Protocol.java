@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 @SuppressWarnings("WeakerAccess")
 public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
-	public enum Format {MSGPACK_V1, JSON_V1}
+	public enum Format {MSGPACK_V1, JSON_V1, UNSUPPORTED}
 
 	abstract byte[] getLastSignature(UUID uuid);
 
@@ -53,9 +53,9 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
 	 * @throws ProtocolException  if the message could not be encoded
 	 * @throws SignatureException if the message signing failed
 	 */
-	public byte[] encodeSign(ProtocolMessageEnvelope pm, Format format) throws IOException, SignatureException {
-		if(pm.message.getVersion() == ProtocolMessage.CHAINED) {
-			pm.getMessage().chain = getLastSignature(pm.getMessage().uuid);
+	public byte[] encodeSign(ProtocolMessage pm, Format format) throws IOException, SignatureException {
+		if(pm.getVersion() == ProtocolMessage.CHAINED) {
+			pm.chain = getLastSignature(pm.getUUID());
 		}
 
 		switch (format) {
@@ -77,7 +77,7 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
 	 * @throws ProtocolException   if the decoding fails
 	 * @throws SignatureException  if the signature verification fails
 	 */
-	public ProtocolMessageEnvelope decodeVerify(byte[] message, Format format) throws IOException, SignatureException {
+	public ProtocolMessage decodeVerify(byte[] message, Format format) throws IOException, SignatureException {
 
 		switch (format) {
 			case MSGPACK_V1:
@@ -91,7 +91,7 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
 
 	}
 
-	public ProtocolMessageEnvelope decodeVerify(byte[] message) throws IOException, SignatureException {
+	public ProtocolMessage decodeVerify(byte[] message) throws IOException, SignatureException {
 		return decodeVerify(message, Format.MSGPACK_V1);
 	}
 }

@@ -19,7 +19,6 @@ package com.ubirch.protocol.codec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
-import com.ubirch.protocol.ProtocolMessageEnvelope;
 import com.ubirch.protocol.ProtocolSigner;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -36,7 +35,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class MsgPackProtocolEncoder implements ProtocolEncoder<ProtocolMessageEnvelope, byte[]> {
+public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
 	private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
 	private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
 
@@ -48,21 +47,15 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<ProtocolMessageEn
 	 * Encodes this protocol message into the msgpack format. Modifies the given ProtocolMessage, filling
 	 * in the signature and encoded bytes.
 	 *
-	 * @param envelope the protocol message to encode and sign
+	 * @param pm the protocol message to encode and sign
 	 * @param signer   the protocol signer
 	 * @return the msgpack encoded message as bytes
 	 * \
 	 */
 	@Override
-	public byte[] encode(ProtocolMessageEnvelope envelope, ProtocolSigner signer)
-					throws ProtocolException, SignatureException {
-		if (envelope == null || signer == null) {
-			throw new IllegalArgumentException("envelope or signer null");
-		}
-
-		ProtocolMessage pm = envelope.getMessage();
-		if (pm == null) {
-			throw new ProtocolException("empty mesage can't be encoded: " + envelope);
+	public byte[] encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
+		if (pm == null || signer == null) {
+			throw new IllegalArgumentException("message or signer null");
 		}
 
 		try {
@@ -94,19 +87,20 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<ProtocolMessageEn
 
 			// sign the hash
 			byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
+			pm.setSigned(dataToSign);
 			pm.setSignature(signature);
 			packer.packRawStringHeader(signature.length);
 			packer.writePayload(signature);
 			packer.flush();
 			packer.close();
 
-			envelope.setRaw(out.toByteArray());
-
-			return envelope.getRaw();
-		} catch (IOException e) {
-			throw new ProtocolException("msgpack encoding failed", e);
+			return out.toByteArray();
 		} catch (InvalidKeyException e) {
 			throw new ProtocolException("invalid key", e);
+		} catch (IOException e) {
+			throw new ProtocolException("msgpack encoding failed", e);
+		} catch (NullPointerException e) {
+			throw new ProtocolException("msgpack encoding failed: field null?", e);
 		}
 	}
 

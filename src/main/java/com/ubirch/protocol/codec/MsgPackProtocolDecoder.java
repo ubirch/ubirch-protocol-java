@@ -19,8 +19,6 @@ package com.ubirch.protocol.codec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
-import com.ubirch.protocol.ProtocolMessageEnvelope;
-import com.ubirch.protocol.ProtocolVerifier;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePackException;
 import org.msgpack.core.MessageUnpacker;
@@ -29,8 +27,7 @@ import org.msgpack.value.ValueType;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
+import java.util.Arrays;
 
 /**
  * The default msgpack ubirch protocol decoder.
@@ -38,7 +35,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class MsgPackProtocolDecoder implements ProtocolDecoder<ProtocolMessageEnvelope, byte[]> {
+public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
 	// from end: offset in bytes for the signature (including msgpack marker bytes)
 	public static final int SIGNATURE_OFFSET = 67;
 
@@ -46,29 +43,6 @@ public class MsgPackProtocolDecoder implements ProtocolDecoder<ProtocolMessageEn
 
 	public static MsgPackProtocolDecoder getDecoder() {
 		return instance;
-	}
-
-	/**
-	 * Decode and verify a msgpack encoded message.
-	 *
-	 * @param message  the message to decode
-	 * @param verifier a {@link ProtocolVerifier} that takes care of cryptographically verifying the message signature
-	 * @return the envelope containing the message and the raw data of the message
-	 * @throws ProtocolException if the decoding or signature verification failed
-	 */
-	@Override
-	public ProtocolMessageEnvelope decode(byte[] message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
-		ProtocolMessageEnvelope envelope = new ProtocolMessageEnvelope(decode(message));
-		envelope.setRaw(message);
-
-		try {
-			if (!verifier.verify(envelope.getMessage().getUUID(), envelope.getRaw(), 0, envelope.getRaw().length - 67,
-							envelope.getMessage().getSignature()))
-				throw new SignatureException(String.format("signature verification failed: %s", envelope));
-			return envelope;
-		} catch (InvalidKeyException e) {
-			throw new ProtocolException("invalid key", e);
-		}
 	}
 
 	/**
@@ -106,7 +80,8 @@ public class MsgPackProtocolDecoder implements ProtocolDecoder<ProtocolMessageEn
 				pm.setHint(unpacker.unpackInt());
 				unpacker.skipValue();
 
-				// finally store the signature for later verification
+				// finally store the signed data and signature for later verification
+				pm.setSigned(Arrays.copyOfRange(message, 0, message.length - 67));
 				pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
 
 				return pm;
