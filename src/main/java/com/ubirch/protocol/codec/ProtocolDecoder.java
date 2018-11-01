@@ -1,9 +1,26 @@
+/*
+ * Copyright (c) 2018 ubirch GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ubirch.protocol.codec;
 
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import com.ubirch.protocol.ProtocolVerifier;
 
+import java.security.InvalidKeyException;
 import java.security.SignatureException;
 
 /**
@@ -14,7 +31,7 @@ import java.security.SignatureException;
  * @param <T> the type of the source message
  * @author Matthias L. Jugel
  */
-public interface ProtocolDecoder<T> {
+abstract class ProtocolDecoder<T> {
 	/**
 	 * Decode and verify this message.
 	 *
@@ -24,7 +41,16 @@ public interface ProtocolDecoder<T> {
 	 * @throws ProtocolException if some json processing issue occurs, or the crypto functions fail (no signature verification)
 	 * @throws SignatureException if the signature verification cannot be done for some reason
 	 */
-	ProtocolMessage decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException;
+	public ProtocolMessage decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
+		ProtocolMessage pm = decode(message);
+		try {
+			if (!verifier.verify(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length, pm.getSignature()))
+				throw new SignatureException(String.format("signature verification failed: %s", pm));
+			return pm;
+		} catch (InvalidKeyException e) {
+			throw new ProtocolException("invalid key", e);
+		}
+	}
 
 	/**
 	 * Decode a protocol messsage without decoding, just taking the pieces apart.
@@ -33,5 +59,5 @@ public interface ProtocolDecoder<T> {
 	 * @return the decoded message as a {@link ProtocolMessage}
 	 * @throws ProtocolException if json decoding fails
 	 */
-	ProtocolMessage decode(T message) throws ProtocolException;
+	abstract ProtocolMessage decode(T message) throws ProtocolException;
 }

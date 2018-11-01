@@ -19,7 +19,6 @@ package com.ubirch.protocol.codec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
-import com.ubirch.protocol.ProtocolMessageEnvelope;
 import com.ubirch.protocol.ProtocolSigner;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
@@ -88,6 +87,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
 
 			// sign the hash
 			byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
+			pm.setSigned(dataToSign);
 			pm.setSignature(signature);
 			packer.packRawStringHeader(signature.length);
 			packer.writePayload(signature);

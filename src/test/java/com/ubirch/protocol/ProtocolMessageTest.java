@@ -1,7 +1,26 @@
+/*
+ * Copyright (c) 2018 ubirch GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.ubirch.protocol;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.ubirch.protocol.codec.JSONProtocolDecoder;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
@@ -10,10 +29,10 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test the {@link ProtocolMessage}.
@@ -104,4 +123,27 @@ class ProtocolMessageTest extends ProtocolFixtures {
 		ProtocolMessage pm = new ProtocolMessage(1, testUUID, 2, expectedSimpleJson);
 		assertEquals(expectedProtocolMessage, pm.toString());
 	}
+
+	@Test
+	void testProtocolMessageInternalView() throws IOException {
+		ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+		mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+		mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
+		mapper.setConfig(mapper.getSerializationConfig().withView(ProtocolMessageViews.WithSignedData.class));
+
+		byte[] internalSerialized = mapper.writeValueAsBytes(pm);
+
+		assertEquals(expectedSignedMessageJsonWithData, new String(internalSerialized));
+	}
+
+	@Test
+	void testProtocolMessageVerifyable() throws ProtocolException, NoSuchAlgorithmException {
+		ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
+
+		TestProtocol proto = new TestProtocol();
+		assertDoesNotThrow(() -> assertTrue(proto.verify(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length, pm.getSignature())));
+	}
+
 }

@@ -18,6 +18,7 @@ package com.ubirch.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,6 +34,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
  */
 @SuppressWarnings("WeakerAccess")
 public class ProtocolMessage {
+
 	@JsonIgnore
 	public final static int ubirchProtocolVersion = 1;
 
@@ -43,15 +45,26 @@ public class ProtocolMessage {
 	@JsonIgnore
 	public final static int SIGNED = ((ubirchProtocolVersion << 4) | 0x02);
 
+	@JsonView(ProtocolMessageViews.Default.class)
 	protected int version = 0;
 	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.Default.class)
 	protected UUID uuid = null;
 	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.Default.class)
 	protected byte[] chain = null;
-	protected int hint = 0;
 	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.Default.class)
+	protected int hint = 0;
+
+	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.WithSignedData.class)
+	protected byte[] signed;
+	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.Default.class)
 	protected byte[] signature = null;
 	@JsonInclude(NON_NULL)
+	@JsonView(ProtocolMessageViews.Default.class)
 	protected JsonNode payload;
 
 	public ProtocolMessage() {
@@ -78,6 +91,7 @@ public class ProtocolMessage {
 						(chain != null ? String.format(",chain=%s", encoder.encodeToString(chain)) : "") +
 						String.format(",hint=0x%02x", hint) +
 						(payload != null ? ",p=" + payload : "") +
+						(signed != null ? ",d=" + encoder.encodeToString(signed) : "") +
 						(signature != null ? ",s=" + encoder.encodeToString(signature) : "") + ")";
 	}
 
@@ -119,6 +133,14 @@ public class ProtocolMessage {
 
 	public void setSignature(byte[] signature) {
 		this.signature = signature;
+	}
+
+	public byte[] getSigned() {
+		return signed;
+	}
+
+	public void setSigned(byte[] data) {
+		this.signed = data;
 	}
 
 	public JsonNode getPayload() {

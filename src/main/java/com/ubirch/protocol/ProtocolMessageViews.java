@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package com.ubirch.protocol.codec;
-
-import java.nio.ByteBuffer;
-import java.util.UUID;
+package com.ubirch.protocol;
 
 /**
- * Utility class for handling UUID and bytes
+ * Jackson Views that determine which parts of the protocol message are serialized.
  *
  * @author Matthias L. Jugel
  */
-@SuppressWarnings("WeakerAccess")
-public class UUIDUtil {
-	public static byte[] uuidToBytes(UUID uuid) {
-		ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
-		bb.putLong(uuid.getMostSignificantBits());
-		bb.putLong(uuid.getLeastSignificantBits());
-		return bb.array();
-	}
-
-	public static UUID bytesToUUID(byte[] bytes) {
-		ByteBuffer bb = ByteBuffer.wrap(bytes);
-		long high = bb.getLong();
-		long low = bb.getLong();
-		return new UUID(high, low);
-	}
+public class ProtocolMessageViews {
+	public static class Default {}
+	public static class WithSignedData extends Default {}
 }
