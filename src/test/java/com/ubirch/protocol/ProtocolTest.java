@@ -46,6 +46,16 @@ public class ProtocolTest extends ProtocolFixtures {
 	private final Logger logger = LoggerFactory.getLogger(ProtocolTest.class);
 
 	@Test
+	void testUnsupportedTargetFormat() {
+		assertThrows(ProtocolException.class, () -> new TestProtocol().encodeSign(new ProtocolMessage(), Protocol.Format.UNSUPPORTED));
+	}
+
+	@Test
+	void testUnsupportedSourceFormat() {
+		assertThrows(ProtocolException.class, () -> new TestProtocol().decodeVerify("1".getBytes(), Protocol.Format.UNSUPPORTED));
+	}
+
+	@Test
 	void testCreateSignedMessage() throws IOException, GeneralSecurityException {
 		Protocol p = new TestProtocol();
 

@@ -33,7 +33,7 @@ import java.util.UUID;
  */
 @SuppressWarnings("WeakerAccess")
 public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
-	public enum Format {MSGPACK_V1, JSON_V1}
+	public enum Format {MSGPACK_V1, JSON_V1, UNSUPPORTED}
 
 	abstract byte[] getLastSignature(UUID uuid);
 

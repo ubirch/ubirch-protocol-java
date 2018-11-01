@@ -113,4 +113,9 @@ class JSONProtocolDecoderTest extends ProtocolFixtures {
 		assertThrows(ProtocolException.class, () ->
 						decoder.decode(expectedSignedMessageJson, (uuid, data, offset, len, signature) -> true));
 	}
+
+	@Test
+	void testJSONProtocolDecoderFails() {
+		assertThrows(ProtocolException.class, () -> JSONProtocolDecoder.getDecoder().decode("X"));
+	}
 }
