@@ -41,7 +41,9 @@ public class JSONProtocolDecoder extends ProtocolDecoder<String> {
 	public ProtocolMessage decode(String message) throws ProtocolException {
 		try {
 			ProtocolMessage pm = mapper.readValue(message, ProtocolMessage.class);
-			pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+			if(pm.getPayload() != null) {
+				pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+			}
 			return pm;
 		} catch (JsonProcessingException e) {
 			throw new ProtocolException("extraction of signed data failed", e);
