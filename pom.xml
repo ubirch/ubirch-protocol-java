@@ -20,7 +20,7 @@
 
   <groupId>com.ubirch</groupId>
   <artifactId>ubirch-protocol-java</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.4-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <licenses>
@@ -53,7 +53,7 @@
     <connection>scm:git:git://github.com/ubirch/ubirch-protocol-java.git</connection>
     <developerConnection>scm:git:git@github.com:ubirch/ubirch-protocol-java.git</developerConnection>
     <url>http://github.com/ubirch/ubirch-protocol-java</url>
-    <tag>ubirch-protocol-java-1.0.3</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <distributionManagement>
