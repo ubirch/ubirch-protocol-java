@@ -146,4 +146,10 @@ class ProtocolMessageTest extends ProtocolFixtures {
 		assertDoesNotThrow(() -> assertTrue(proto.verify(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length, pm.getSignature())));
 	}
 
+	@Test
+	void testProtocolMessageWithEmptySignature() throws ProtocolException {
+		ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode("{}");
+		assertNull(pm.signed);
+	}
+
 }

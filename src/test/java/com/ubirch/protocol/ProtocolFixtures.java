@@ -99,7 +99,8 @@ public class ProtocolFixtures {
 		}
 
 		@Override
-		public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException, InvalidKeyException {
+		public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature)
+						throws SignatureException, InvalidKeyException {
 			try {
 				MessageDigest md = (MessageDigest) sha512.clone();
 				md.update(data, offset, len);
