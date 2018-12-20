@@ -56,6 +56,8 @@ public class ProtocolFixtures {
 	protected static String expectedSignedMessageJsonWithData;
 	protected static List<byte[]> expectedChainedMessages;
 	protected static List<String> expectedChainedMessagesJson;
+	protected static byte[] expectedSignedNonUtf8Message;
+	protected static byte[] expectedSignedNonUtf8Payload;
 
 	protected class TestProtocol extends Protocol {
 		private final Logger logger = LoggerFactory.getLogger(TestProtocol.class);
@@ -149,6 +151,9 @@ public class ProtocolFixtures {
 		expectedChainedMessagesJson.add(fixtures.getProperty("chainMessage01.json"));
 		expectedChainedMessagesJson.add(fixtures.getProperty("chaindMessage02.json"));
 		expectedChainedMessagesJson.add(fixtures.getProperty("chainMessage03.json"));
+
+		expectedSignedNonUtf8Message = Hex.decodeHex(fixtures.getProperty("nonUtf8Message").toCharArray());
+		expectedSignedNonUtf8Payload = Hex.decodeHex(fixtures.getProperty("nonUtf8Payload").toCharArray());
 	}
 
 	protected byte[] getBinaryFixture(String name) throws IOException {

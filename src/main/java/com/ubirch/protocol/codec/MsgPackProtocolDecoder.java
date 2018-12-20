@@ -16,7 +16,10 @@
 
 package com.ubirch.protocol.codec;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import org.msgpack.core.MessagePack;
@@ -38,6 +41,7 @@ import java.util.Arrays;
 public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
 	// from end: offset in bytes for the signature (including msgpack marker bytes)
 	public static final int SIGNATURE_OFFSET = 67;
+	public static final char UTF8_REPLACEMENT_CHAR = 0xFFFD;
 
 	private static MsgPackProtocolDecoder instance = new MsgPackProtocolDecoder();
 
@@ -78,10 +82,20 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
 						throw new ProtocolException(String.format("unknown message version: 0x%04x", pm.getVersion()));
 				}
 				pm.setHint(unpacker.unpackInt());
-				unpacker.skipValue();
+
+				// If we decode an arbitrary binary payload as utf-8, all illegal bytes get replaced by the unicode
+				// replacement character. If the decoded payload contains this special character, it means that the
+				// payload probably wasn't utf-8 and we lost some data. Let's instead try to decode it as a binary.
+				JsonNode payload = pm.getPayload();
+				if (payload instanceof TextNode && payload.textValue().indexOf(UTF8_REPLACEMENT_CHAR) != -1) {
+					byte[] rawBinary = unpacker.readPayload(unpacker.unpackRawStringHeader());
+					pm.setPayload(new BinaryNode(rawBinary));
+				} else {
+					unpacker.skipValue();
+				}
 
 				// finally store the signed data and signature for later verification
-				pm.setSigned(Arrays.copyOfRange(message, 0, message.length - 67));
+				pm.setSigned(Arrays.copyOfRange(message, 0, message.length - SIGNATURE_OFFSET));
 				pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
 
 				return pm;

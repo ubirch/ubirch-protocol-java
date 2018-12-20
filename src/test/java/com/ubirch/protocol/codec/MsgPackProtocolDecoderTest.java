@@ -16,11 +16,13 @@
 
 package com.ubirch.protocol.codec;
 
+import com.fasterxml.jackson.databind.node.BinaryNode;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolFixtures;
 import com.ubirch.protocol.ProtocolMessage;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -116,4 +118,11 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
 						decoder.decode(new byte[]{(byte) 0x91, 0x01}, (uuid, data, offset, len, signature) -> true));
 	}
 
+	@Test
+	void testMsgPackProtocolDecoderNonUtf8RawBinary() throws IOException {
+		ProtocolMessage message = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedNonUtf8Message);
+
+		assertEquals(message.getPayload().getClass(), BinaryNode.class);
+		assertArrayEquals(message.getPayload().binaryValue(), expectedSignedNonUtf8Payload);
+	}
 }
