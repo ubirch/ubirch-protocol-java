@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,32 +32,33 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 abstract class ProtocolDecoder<T> {
-	/**
-	 * Decode and verify this message.
-	 *
-	 * @param message  the message to decode
-	 * @param verifier a {@link ProtocolVerifier} that takes care of cryptographically verifying the message signature
-	 * @return the decoded and verified data as an envelope type
-	 * @throws ProtocolException if some json processing issue occurs, or the crypto functions fail (no signature verification)
-	 * @throws SignatureException if the signature verification cannot be done for some reason
-	 */
-	public ProtocolMessage decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
-		ProtocolMessage pm = decode(message);
-		try {
-			if (!verifier.verify(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length, pm.getSignature()))
-				throw new SignatureException(String.format("signature verification failed: %s", pm));
-			return pm;
-		} catch (InvalidKeyException e) {
-			throw new ProtocolException("invalid key", e);
-		}
-	}
+    /**
+     * Decode and verify this message.
+     *
+     * @param message  the message to decode
+     * @param verifier a {@link ProtocolVerifier} that takes care of cryptographically verifying the message signature
+     * @return the decoded and verified data as an envelope type
+     * @throws ProtocolException  if some json processing issue occurs, or the crypto functions fail (no signature verification)
+     * @throws SignatureException if the signature verification cannot be done for some reason
+     */
+    public ProtocolMessage decode(T message, ProtocolVerifier verifier) throws ProtocolException, SignatureException {
+        ProtocolMessage pm = decode(message);
+        try {
+            if (!verifier.verify(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length, pm.getSignature())) {
+                throw new SignatureException(String.format("signature verification failed: %s", pm));
+            }
+            return pm;
+        } catch (InvalidKeyException e) {
+            throw new ProtocolException("invalid key", e);
+        }
+    }
 
-	/**
-	 * Decode a protocol messsage without decoding, just taking the pieces apart.
-	 *
-	 * @param message the message to decode
-	 * @return the decoded message as a {@link ProtocolMessage}
-	 * @throws ProtocolException if json decoding fails
-	 */
-	abstract ProtocolMessage decode(T message) throws ProtocolException;
+    /**
+     * Decode a protocol messsage without decoding, just taking the pieces apart.
+     *
+     * @param message the message to decode
+     * @return the decoded message as a {@link ProtocolMessage}
+     * @throws ProtocolException if json decoding fails
+     */
+    abstract ProtocolMessage decode(T message) throws ProtocolException;
 }

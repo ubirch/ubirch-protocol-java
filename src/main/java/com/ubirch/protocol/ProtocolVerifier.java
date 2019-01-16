@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,17 @@ import java.util.UUID;
  * @author Matthias L. Jugel
  */
 public interface ProtocolVerifier {
-	/**
-	 * Sign the protocol message and return the updated message with the signature.
-	 *
-	 * @param uuid      the uuid to identify the public key to verify the message
-	 * @param data      the data to verify
-	 * @param offset    the offset into the data
-	 * @param len       the length of the data to verify
-	 * @param signature the signature to verify against
-	 * @return whether the signature can be verified given the uuid and data
-	 * @throws SignatureException  if the verification fails for initialization or other issues
-	 * @throws InvalidKeyException if the verification fails because the key is invalid
-	 */
-	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
-	boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException, InvalidKeyException;
+    /**
+     * Sign the protocol message and return the updated message with the signature.
+     *
+     * @param uuid      the uuid to identify the public key to verify the message
+     * @param data      the data to verify
+     * @param offset    the offset into the data
+     * @param len       the length of the data to verify
+     * @param signature the signature to verify against
+     * @return whether the signature can be verified given the uuid and data
+     * @throws SignatureException  if the verification fails for initialization or other issues
+     * @throws InvalidKeyException if the verification fails because the key is invalid
+     */
+    boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException, InvalidKeyException;
 }

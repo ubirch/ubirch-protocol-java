@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,65 +33,65 @@ import java.util.UUID;
  */
 @SuppressWarnings("WeakerAccess")
 public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
-	public enum Format {MSGPACK_V1, JSON_V1, UNSUPPORTED}
+    /**
+     * Create a new protocol instance.
+     */
+    public Protocol() {
+    }
 
-	abstract byte[] getLastSignature(UUID uuid);
+    abstract byte[] getLastSignature(UUID uuid);
 
-	/**
-	 * Create a new protocol instance.
-	 */
-	public Protocol() {
-	}
+    /**
+     * Create a new message from the given protocol message and sign it.
+     * A side effect of this procedure is an update of the fields of the protocol message parameter.
+     *
+     * @param pm     the protocol message to encode and sign
+     * @param format the target format to encode to
+     * @return the bytes representing the raw value of the message
+     * @throws ProtocolException  if the message could not be encoded
+     * @throws SignatureException if the message signing failed
+     */
+    public byte[] encodeSign(ProtocolMessage pm, Format format) throws IOException, SignatureException {
+        if (pm.getVersion() == ProtocolMessage.CHAINED) {
+            pm.chain = getLastSignature(pm.getUUID());
+        }
 
-	/**
-	 * Create a new message from the given protocol message and sign it.
-	 * A side effect of this procedure is an update of the fields of the protocol message parameter.
-	 *
-	 * @param pm     the protocol message to encode and sign
-	 * @param format the target format to encode to
-	 * @return the bytes representing the raw value of the message
-	 * @throws ProtocolException  if the message could not be encoded
-	 * @throws SignatureException if the message signing failed
-	 */
-	public byte[] encodeSign(ProtocolMessage pm, Format format) throws IOException, SignatureException {
-		if(pm.getVersion() == ProtocolMessage.CHAINED) {
-			pm.chain = getLastSignature(pm.getUUID());
-		}
+        switch (format) {
+            case MSGPACK_V1:
+                return MsgPackProtocolEncoder.getEncoder().encode(pm, this);
+            case JSON_V1:
+                return JSONProtocolEncoder.getEncoder().encode(pm, this).getBytes(StandardCharsets.UTF_8);
+            default:
+                throw new ProtocolException(String.format("unsupported target format: %s", format));
+        }
+    }
 
-		switch (format) {
-			case MSGPACK_V1:
-				return MsgPackProtocolEncoder.getEncoder().encode(pm, this);
-			case JSON_V1:
-				return JSONProtocolEncoder.getEncoder().encode(pm, this).getBytes(StandardCharsets.UTF_8);
-			default:
-				throw new ProtocolException(String.format("unsupported target format: %s", format));
-		}
-	}
+    /**
+     * Verify and construct a protocol message from the given byte input.
+     *
+     * @param message the binary message to decode
+     * @param format  the source fromat to decode from
+     * @return the decoded and verified protocol message
+     * @throws ProtocolException  if the decoding fails
+     * @throws SignatureException if the signature verification fails
+     */
+    public ProtocolMessage decodeVerify(byte[] message, Format format) throws IOException, SignatureException {
 
-	/**
-	 * Verify and construct a protocol message from the given byte input.
-	 *
-	 * @param message the binary message to decode
-	 * @param format  the source fromat to decode from
-	 * @return the decoded and verified protocol message
-	 * @throws ProtocolException   if the decoding fails
-	 * @throws SignatureException  if the signature verification fails
-	 */
-	public ProtocolMessage decodeVerify(byte[] message, Format format) throws IOException, SignatureException {
+        switch (format) {
+            case MSGPACK_V1:
+                return MsgPackProtocolDecoder.getDecoder().decode(message, this);
+            case JSON_V1:
+                return JSONProtocolDecoder.getDecoder().decode(new String(message, StandardCharsets.UTF_8), this);
+            default:
+                throw new ProtocolException(String.format("unsupported source format: %s", format));
+        }
+    }
 
-		switch (format) {
-			case MSGPACK_V1:
-				return MsgPackProtocolDecoder.getDecoder().decode(message, this);
-			case JSON_V1:
-				return JSONProtocolDecoder.getDecoder().decode(new String(message, StandardCharsets.UTF_8), this);
-			default:
-				throw new ProtocolException(String.format("unsupported source format: %s", format));
-		}
+    public ProtocolMessage decodeVerify(byte[] message) throws IOException, SignatureException {
+        return decodeVerify(message, Format.MSGPACK_V1);
+    }
 
-
-	}
-
-	public ProtocolMessage decodeVerify(byte[] message) throws IOException, SignatureException {
-		return decodeVerify(message, Format.MSGPACK_V1);
-	}
+    public enum Format {
+        MSGPACK_V1, JSON_V1, UNSUPPORTED
+    }
 }

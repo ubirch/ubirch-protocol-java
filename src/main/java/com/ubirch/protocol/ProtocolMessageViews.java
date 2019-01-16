@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ package com.ubirch.protocol;
  * @author Matthias L. Jugel
  */
 public class ProtocolMessageViews {
-	public static class Default {}
-	public static class WithSignedData extends Default {}
+    public static class Default {
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public static class WithSignedData extends Default {
+    }
 }

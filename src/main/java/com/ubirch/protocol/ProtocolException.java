@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,15 @@ package com.ubirch.protocol;
 
 import java.io.IOException;
 
-@SuppressWarnings("WeakerAccess")
+/**
+ * Exception that is used to indicate a ubirch protocol issue.
+ */
 public class ProtocolException extends IOException {
-	public ProtocolException(String message) {
-		super(message);
-	}
+    public ProtocolException(String message) {
+        super(message);
+    }
 
-	public ProtocolException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public ProtocolException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

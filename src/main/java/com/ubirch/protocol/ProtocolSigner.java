@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,16 +26,16 @@ import java.util.UUID;
  * @author Matthias L. Jugel
  */
 public interface ProtocolSigner {
-	/**
-	 * Sign the protocol message and return the updated message with the signature.
-	 *
-	 * @param uuid   the uuid to identify the public key to sign the message
-	 * @param data   the data to sign
-	 * @param offset the offset into the data
-	 * @param len    the length of the data to sign
-	 * @return the generated signature
-	 * @throws SignatureException  if the signing process fails
-	 * @throws InvalidKeyException if the signing process fails because of an invalid private key
-	 */
-	byte[] sign(UUID uuid, byte[] data, int offset, int len) throws SignatureException, InvalidKeyException;
+    /**
+     * Sign the protocol message and return the updated message with the signature.
+     *
+     * @param uuid   the uuid to identify the public key to sign the message
+     * @param data   the data to sign
+     * @param offset the offset into the data
+     * @param len    the length of the data to sign
+     * @return the generated signature
+     * @throws SignatureException  if the signing process fails
+     * @throws InvalidKeyException if the signing process fails because of an invalid private key
+     */
+    byte[] sign(UUID uuid, byte[] data, int offset, int len) throws SignatureException, InvalidKeyException;
 }

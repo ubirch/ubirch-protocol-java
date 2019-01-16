@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,14 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 public interface ProtocolEncoder<T> {
-	/**
-	 * Encode a protocol message into the target type.
-	 * @param pm the protocol message to encode from
-	 * @param signer a protocol signer taking care of the crypto operations to sign the final message
-	 * @return the encoded and signed message
-	 * @throws ProtocolException if the encoding fails for some reason
-	 * @throws SignatureException if the signature cannot be created
-	 */
-	T encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException;
+    /**
+     * Encode a protocol message into the target type.
+     *
+     * @param pm     the protocol message to encode from
+     * @param signer a protocol signer taking care of the crypto operations to sign the final message
+     * @return the encoded and signed message
+     * @throws ProtocolException  if the encoding fails for some reason
+     * @throws SignatureException if the signature cannot be created
+     */
+    T encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException;
 }

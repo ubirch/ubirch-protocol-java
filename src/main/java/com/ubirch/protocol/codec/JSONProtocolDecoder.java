@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,27 +28,25 @@ import java.io.IOException;
  *
  * @author Matthias L. Jugel
  */
-@SuppressWarnings("WeakerAccess")
 public class JSONProtocolDecoder extends ProtocolDecoder<String> {
-	private final ObjectMapper mapper = new ObjectMapper();
+    private static JSONProtocolDecoder instance = new JSONProtocolDecoder();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-	private static JSONProtocolDecoder instance = new JSONProtocolDecoder();
+    public static JSONProtocolDecoder getDecoder() {
+        return instance;
+    }
 
-	public static JSONProtocolDecoder getDecoder() {
-		return instance;
-	}
-
-	public ProtocolMessage decode(String message) throws ProtocolException {
-		try {
-			ProtocolMessage pm = mapper.readValue(message, ProtocolMessage.class);
-			if(pm.getPayload() != null) {
-				pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
-			}
-			return pm;
-		} catch (JsonProcessingException e) {
-			throw new ProtocolException("extraction of signed data failed", e);
-		} catch (IOException e) {
-			throw new ProtocolException("json decoding failed", e);
-		}
-	}
+    public ProtocolMessage decode(String message) throws ProtocolException {
+        try {
+            ProtocolMessage pm = mapper.readValue(message, ProtocolMessage.class);
+            if (pm.getPayload() != null) {
+                pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+            }
+            return pm;
+        } catch (JsonProcessingException e) {
+            throw new ProtocolException("extraction of signed data failed", e);
+        } catch (IOException e) {
+            throw new ProtocolException("json decoding failed", e);
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,40 +36,40 @@ import java.security.SignatureException;
  */
 @SuppressWarnings("WeakerAccess")
 public class JSONProtocolEncoder implements ProtocolEncoder<String> {
-	private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
-	private ObjectMapper mapper = new ObjectMapper();
+    private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
+    private ObjectMapper mapper = new ObjectMapper();
 
-	public static JSONProtocolEncoder getEncoder() {
-		return instance;
-	}
+    public JSONProtocolEncoder() {
+        mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+        mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
+        mapper.setConfig(mapper.getSerializationConfig().withView(ProtocolMessageViews.Default.class));
+    }
 
-	public JSONProtocolEncoder() {
-		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-		mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-		mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
-		mapper.setConfig(mapper.getSerializationConfig().withView(ProtocolMessageViews.Default.class));
-	}
+    public static JSONProtocolEncoder getEncoder() {
+        return instance;
+    }
 
-	@Override
-	public String encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
-		if (pm == null || signer == null) {
-			throw new IllegalArgumentException("message or signer null");
-		}
+    @Override
+    public String encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
+        if (pm == null || signer == null) {
+            throw new IllegalArgumentException("message or signer null");
+        }
 
-		int protocolVersion = pm.getVersion();
-		if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
-			throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
-		}
+        int protocolVersion = pm.getVersion();
+        if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
+            throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
+        }
 
-		try {
-			pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
-			byte[] signature = signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length);
-			pm.setSignature(signature);
-			return new String(mapper.writeValueAsBytes(pm), StandardCharsets.UTF_8);
-		} catch (JsonProcessingException e) {
-			throw new ProtocolException("json encoding failed", e);
-		} catch (InvalidKeyException e) {
-			throw new ProtocolException("invalid key", e);
-		}
-	}
+        try {
+            pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+            byte[] signature = signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length);
+            pm.setSignature(signature);
+            return new String(mapper.writeValueAsBytes(pm), StandardCharsets.UTF_8);
+        } catch (JsonProcessingException e) {
+            throw new ProtocolException("json encoding failed", e);
+        } catch (InvalidKeyException e) {
+            throw new ProtocolException("invalid key", e);
+        }
+    }
 }

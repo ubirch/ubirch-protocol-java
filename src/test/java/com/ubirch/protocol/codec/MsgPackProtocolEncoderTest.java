@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,80 +34,80 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 /**
  * Test the implementations of {@link com.ubirch.protocol.codec.MsgPackProtocolEncoder}.
  *
  * @author Matthias L. Jugel
  */
 class MsgPackProtocolEncoderTest extends ProtocolFixtures {
-	private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolEncoderTest.class);
+    private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolEncoderTest.class);
 
-	@Test
-	void testMsgPackProtocolEncoderInstance() {
-		ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
-		assertNotNull(encoder, "encoder should not be null");
-		assertEquals(encoder, MsgPackProtocolEncoder.getEncoder(), "encoder should be a singleton");
-	}
+    @Test
+    void testMsgPackProtocolEncoderInstance() {
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+        assertNotNull(encoder, "encoder should not be null");
+        assertEquals(encoder, MsgPackProtocolEncoder.getEncoder(), "encoder should be a singleton");
+    }
 
-	@Test
-	void testMsgPackProtocolEncoderEmptyEnvelopeException() {
-		MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
-		ProtocolMessage pm = new ProtocolMessage();
-		assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
-	}
+    @Test
+    void testMsgPackProtocolEncoderEmptyEnvelopeException() {
+        MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+        ProtocolMessage pm = new ProtocolMessage();
+        assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
+    }
 
+    @Test
+    void testMsgPackProtocolEncoderVersionException() {
+        ProtocolMessage pm = new ProtocolMessage(0, testUUID, 0xEF, 1);
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+        assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
+    }
 
-	@Test
-	void testMsgPackProtocolEncoderVersionException() {
-		ProtocolMessage pm = new ProtocolMessage(0, testUUID, 0xEF, 1);
-		ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
-		assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
-	}
+    @Test
+    void testMsgPackProtocolEncoderArgumentExceptions() {
+        ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
-	@Test
-	void testMsgPackProtocolEncoderArgumentExceptions() {
-		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-		ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+        // check argument exceptions
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(pm, null));
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, (uuid, data, offset, len) -> null));
+        assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, null));
+    }
 
-		// check argument exceptions
-		assertThrows(IllegalArgumentException.class, () -> encoder.encode(pm, null));
-		assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, (uuid, data, offset, len) -> null));
-		assertThrows(IllegalArgumentException.class, () -> encoder.encode(null, null));
-	}
+    @Test
+    void testMsgPackProtocolEncoderEncode() throws NoSuchAlgorithmException, SignatureException, IOException {
+        ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
-	@Test
-	void testMsgPackProtocolEncoderEncode() throws NoSuchAlgorithmException, SignatureException, IOException {
-		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-		ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+        MessageDigest digest = MessageDigest.getInstance("SHA-512");
+        byte[] msg = encoder.encode(pm, (uuid, data, offset, len) -> {
+            digest.update(data, offset, len);
+            return digest.digest();
+        });
 
-		MessageDigest digest = MessageDigest.getInstance("SHA-512");
-		byte[] msg = encoder.encode(pm, (uuid, data, offset, len) -> {
-			digest.update(data, offset, len);
-			return digest.digest();
-		});
+        byte[] expectedMessage = Arrays.copyOfRange(expectedSignedMessage, 0, expectedSignedMessage.length - 67);
+        byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 67);
+        assertArrayEquals(expectedMessage, actualMessage);
 
-		byte[] expectedMessage = Arrays.copyOfRange(expectedSignedMessage, 0, expectedSignedMessage.length - 67);
-		byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 67);
-		assertArrayEquals(expectedMessage, actualMessage);
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
+        assertEquals(5, unpacker.unpackArrayHeader());
+        assertEquals(ProtocolMessage.SIGNED, unpacker.unpackInt());
+        assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackRawStringHeader()));
+        assertEquals(0xEF, unpacker.unpackInt());
+        assertEquals(1, unpacker.unpackInt());
+        // check the SHA-512 digest of the message (fake signature)
+        assertArrayEquals(expectedSignedMessageHash, unpacker.readPayload(unpacker.unpackRawStringHeader()));
+    }
 
-		MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
-		assertEquals(5, unpacker.unpackArrayHeader());
-		assertEquals(ProtocolMessage.SIGNED, unpacker.unpackInt());
-		assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackRawStringHeader()));
-		assertEquals(0xEF, unpacker.unpackInt());
-		assertEquals(1, unpacker.unpackInt());
-		// check the SHA-512 digest of the message (fake signature)
-		assertArrayEquals(expectedSignedMessageHash, unpacker.readPayload(unpacker.unpackRawStringHeader()));
-	}
+    @Test
+    void testMsgPackProtocolEncoderInvalidKeyException() {
+        ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 2, 3);
 
-	@Test
-	void testMsgPackProtocolEncoderInvalidKeyException() {
-		ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 2, 3);
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
-		ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
-
-		assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> {
-			throw new InvalidKeyException("test exception");
-		}));
-	}
+        assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> {
+            throw new InvalidKeyException("test exception");
+        }));
+    }
 }

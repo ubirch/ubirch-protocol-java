@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,74 +34,76 @@ import java.security.SignatureException;
  *
  * @author Matthias L. Jugel
  */
-@SuppressWarnings("WeakerAccess")
 public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
-	private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
-	private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
+    private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
+    private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
 
-	public static MsgPackProtocolEncoder getEncoder() {
-		return instance;
-	}
+    public static MsgPackProtocolEncoder getEncoder() {
+        return instance;
+    }
 
-	/**
-	 * Encodes this protocol message into the msgpack format. Modifies the given ProtocolMessage, filling
-	 * in the signature and encoded bytes.
-	 *
-	 * @param pm the protocol message to encode and sign
-	 * @param signer   the protocol signer
-	 * @return the msgpack encoded message as bytes
-	 * \
-	 */
-	@Override
-	public byte[] encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
-		if (pm == null || signer == null) {
-			throw new IllegalArgumentException("message or signer null");
-		}
+    /**
+     * Encodes this protocol message into the msgpack format. Modifies the given ProtocolMessage, filling
+     * in the signature and encoded bytes.
+     *
+     * @param pm     the protocol message to encode and sign
+     * @param signer the protocol signer
+     * @return the msgpack encoded message as bytes
+     * \
+     */
+    @Override
+    public byte[] encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
+        if (pm == null || signer == null) {
+            throw new IllegalArgumentException("message or signer null");
+        }
 
-		try {
-			ByteArrayOutputStream out = new ByteArrayOutputStream(255);
-			MessagePacker packer = config.newPacker(out);
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(255);
+            MessagePacker packer = config.newPacker(out);
 
-			packer.packArrayHeader(5 + (pm.getVersion() & 0x0f) - 2);
-			packer.packInt(pm.getVersion());
-			packer.packRawStringHeader(16).addPayload(UUIDUtil.uuidToBytes(pm.getUUID()));
-			switch (pm.getVersion()) {
-				case ProtocolMessage.CHAINED:
-					packer.packRawStringHeader(64);
-					byte[] chainSignature = pm.getChain();
-					if (chainSignature == null) packer.addPayload(new byte[64]);
-					else packer.addPayload(chainSignature);
-					break;
-				case ProtocolMessage.SIGNED:
-					break;
-				default:
-					throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
-			}
-			packer.packInt(pm.getHint());
-			packer.flush();
+            packer.packArrayHeader(5 + (pm.getVersion() & 0x0f) - 2);
+            packer.packInt(pm.getVersion());
+            packer.packRawStringHeader(16).addPayload(UUIDUtil.uuidToBytes(pm.getUUID()));
+            switch (pm.getVersion()) {
+                case ProtocolMessage.CHAINED:
+                    packer.packRawStringHeader(64);
+                    byte[] chainSignature = pm.getChain();
+                    if (chainSignature == null) {
+                        packer.addPayload(new byte[64]);
+                    } else {
+                        packer.addPayload(chainSignature);
+                    }
+                    break;
+                case ProtocolMessage.SIGNED:
+                    break;
+                default:
+                    throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
+            }
+            packer.packInt(pm.getHint());
+            packer.flush();
 
-			// write the payload
-			ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
-			mapper.writeValue(out, pm.getPayload());
-			byte[] dataToSign = out.toByteArray();
+            // write the payload
+            ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
+            mapper.writeValue(out, pm.getPayload());
+            byte[] dataToSign = out.toByteArray();
 
-			// sign the hash
-			byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
-			pm.setSigned(dataToSign);
-			pm.setSignature(signature);
-			packer.packRawStringHeader(signature.length);
-			packer.writePayload(signature);
-			packer.flush();
-			packer.close();
+            // sign the hash
+            byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
+            pm.setSigned(dataToSign);
+            pm.setSignature(signature);
+            packer.packRawStringHeader(signature.length);
+            packer.writePayload(signature);
+            packer.flush();
+            packer.close();
 
-			return out.toByteArray();
-		} catch (InvalidKeyException e) {
-			throw new ProtocolException("invalid key", e);
-		} catch (IOException e) {
-			throw new ProtocolException("msgpack encoding failed", e);
-		} catch (NullPointerException e) {
-			throw new ProtocolException("msgpack encoding failed: field null?", e);
-		}
-	}
+            return out.toByteArray();
+        } catch (InvalidKeyException e) {
+            throw new ProtocolException("invalid key", e);
+        } catch (IOException e) {
+            throw new ProtocolException("msgpack encoding failed", e);
+        } catch (NullPointerException e) {
+            throw new ProtocolException("msgpack encoding failed: field null?", e);
+        }
+    }
 
 }

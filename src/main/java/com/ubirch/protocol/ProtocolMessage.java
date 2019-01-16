@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 ubirch GmbH
+ * Copyright (c) 2019 ubirch GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,119 +35,119 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 @SuppressWarnings("WeakerAccess")
 public class ProtocolMessage {
 
-	@JsonIgnore
-	public final static int ubirchProtocolVersion = 1;
+    @JsonIgnore
+    public final static int ubirchProtocolVersion = 1;
 
-	@JsonIgnore
-	public final static int PLAIN = ((ubirchProtocolVersion << 4) | 0x01);
-	@JsonIgnore
-	public final static int CHAINED = ((ubirchProtocolVersion << 4) | 0x03);
-	@JsonIgnore
-	public final static int SIGNED = ((ubirchProtocolVersion << 4) | 0x02);
+    @JsonIgnore
+    public final static int PLAIN = ((ubirchProtocolVersion << 4) | 0x01);
+    @JsonIgnore
+    public final static int CHAINED = ((ubirchProtocolVersion << 4) | 0x03);
+    @JsonIgnore
+    public final static int SIGNED = ((ubirchProtocolVersion << 4) | 0x02);
 
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected int version = 0;
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected UUID uuid = null;
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected byte[] chain = null;
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected int hint = 0;
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected int version = 0;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected UUID uuid = null;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected byte[] chain = null;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected int hint = 0;
 
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.WithSignedData.class)
-	protected byte[] signed;
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected byte[] signature = null;
-	@JsonInclude(NON_NULL)
-	@JsonView(ProtocolMessageViews.Default.class)
-	protected JsonNode payload;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.WithSignedData.class)
+    protected byte[] signed;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected byte[] signature = null;
+    @JsonInclude(NON_NULL)
+    @JsonView(ProtocolMessageViews.Default.class)
+    protected JsonNode payload;
 
-	public ProtocolMessage() {
-	}
+    public ProtocolMessage() {
+    }
 
-	public ProtocolMessage(int version, UUID uuid, int hint, Object payload) {
-		this.version = version;
-		this.uuid = uuid;
-		this.hint = hint;
-		this.payload = new ObjectMapper().valueToTree(payload);
-	}
+    public ProtocolMessage(int version, UUID uuid, int hint, Object payload) {
+        this.version = version;
+        this.uuid = uuid;
+        this.hint = hint;
+        this.payload = new ObjectMapper().valueToTree(payload);
+    }
 
-	public ProtocolMessage(int version, UUID uuid, byte[] chain, int hint, Object payload) {
-		this(version, uuid, hint, payload);
-		this.chain = chain;
-	}
+    public ProtocolMessage(int version, UUID uuid, byte[] chain, int hint, Object payload) {
+        this(version, uuid, hint, payload);
+        this.chain = chain;
+    }
 
-	@Override
-	public String toString() {
-		Base64.Encoder encoder = Base64.getEncoder();
-		return "ProtocolMessage(" +
-						String.format("v=0x%04x", version) +
-						(uuid != null ? "," + uuid : "") +
-						(chain != null ? String.format(",chain=%s", encoder.encodeToString(chain)) : "") +
-						String.format(",hint=0x%02x", hint) +
-						(payload != null ? ",p=" + payload : "") +
-						(signed != null ? ",d=" + encoder.encodeToString(signed) : "") +
-						(signature != null ? ",s=" + encoder.encodeToString(signature) : "") + ")";
-	}
+    @Override
+    public String toString() {
+        Base64.Encoder encoder = Base64.getEncoder();
+        return "ProtocolMessage(" +
+                String.format("v=0x%04x", version) +
+                (uuid != null ? "," + uuid : "") +
+                (chain != null ? String.format(",chain=%s", encoder.encodeToString(chain)) : "") +
+                String.format(",hint=0x%02x", hint) +
+                (payload != null ? ",p=" + payload : "") +
+                (signed != null ? ",d=" + encoder.encodeToString(signed) : "") +
+                (signature != null ? ",s=" + encoder.encodeToString(signature) : "") + ")";
+    }
 
-	public int getVersion() {
-		return version;
-	}
+    public int getVersion() {
+        return version;
+    }
 
-	public void setVersion(int version) {
-		this.version = version;
-	}
+    public void setVersion(int version) {
+        this.version = version;
+    }
 
-	public UUID getUUID() {
-		return uuid;
-	}
+    public UUID getUUID() {
+        return uuid;
+    }
 
-	public void setUUID(UUID uuid) {
-		this.uuid = uuid;
-	}
+    public void setUUID(UUID uuid) {
+        this.uuid = uuid;
+    }
 
-	public byte[] getChain() {
-		return chain;
-	}
+    public byte[] getChain() {
+        return chain;
+    }
 
-	public void setChain(byte[] chain) {
-		this.chain = chain;
-	}
+    public void setChain(byte[] chain) {
+        this.chain = chain;
+    }
 
-	public int getHint() {
-		return hint;
-	}
+    public int getHint() {
+        return hint;
+    }
 
-	public void setHint(int hint) {
-		this.hint = hint;
-	}
+    public void setHint(int hint) {
+        this.hint = hint;
+    }
 
-	public byte[] getSignature() {
-		return signature;
-	}
+    public byte[] getSignature() {
+        return signature;
+    }
 
-	public void setSignature(byte[] signature) {
-		this.signature = signature;
-	}
+    public void setSignature(byte[] signature) {
+        this.signature = signature;
+    }
 
-	public byte[] getSigned() {
-		return signed;
-	}
+    public byte[] getSigned() {
+        return signed;
+    }
 
-	public void setSigned(byte[] data) {
-		this.signed = data;
-	}
+    public void setSigned(byte[] data) {
+        this.signed = data;
+    }
 
-	public JsonNode getPayload() {
-		return payload;
-	}
+    public JsonNode getPayload() {
+        return payload;
+    }
 
-	public void setPayload(JsonNode payload) {
-		this.payload = payload;
-	}
+    public void setPayload(JsonNode payload) {
+        this.payload = payload;
+    }
 }
