@@ -19,7 +19,6 @@ package com.ubirch.protocol.codec;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolFixtures;
 import com.ubirch.protocol.ProtocolMessage;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
@@ -84,12 +83,9 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
         MessageDigest digest = MessageDigest.getInstance("SHA-512");
         byte[] msg = encoder.encode(pm, (uuid, data, offset, len) -> {
             digest.update(data, offset, len);
-            byte[] messageDigest = digest.digest();
-            logger.info(Hex.encodeHexString(messageDigest));
-            return messageDigest;
+            return digest.digest();
         });
 
-        logger.debug(Hex.encodeHexString(msg));
         byte[] expectedMessage = Arrays.copyOfRange(expectedSignedMessage, 0, expectedSignedMessage.length - 67);
         byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 67);
         assertArrayEquals(expectedMessage, actualMessage);
@@ -117,12 +113,8 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
             MessageDigest digest = MessageDigest.getInstance("SHA-512");
             byte[] msg = encoder.encode(pm, (uuid, data, offset, len) -> {
                 digest.update(data, offset, len);
-                byte[] messageDigest = digest.digest();
-                logger.info(Hex.encodeHexString(messageDigest));
-                return messageDigest;
+                return digest.digest();
             });
-
-            logger.debug(Hex.encodeHexString(msg));
 
             byte[] expectedMessage = Arrays.copyOfRange(
                     expectedChainedMessages.get(i), 0,
@@ -132,8 +124,6 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
             }
 
             byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 64);
-            logger.info(String.format("E: %s", Hex.encodeHexString(expectedMessage)));
-            logger.info(String.format("A: %s", Hex.encodeHexString(actualMessage)));
             assertArrayEquals(expectedMessage, actualMessage);
 
             MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
@@ -143,8 +133,6 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
             assertArrayEquals(lastSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
             assertEquals(0xEE, unpacker.unpackInt());
             assertEquals(i + 1, unpacker.unpackInt());
-//            // check the SHA-512 digest of the message (fake signature)
-//            assertArrayEquals(expectedChainedMessagesHash.get(i), unpacker.readPayload(unpacker.unpackBinaryHeader()));
 
             lastSignature = pm.getSignature();
         }
