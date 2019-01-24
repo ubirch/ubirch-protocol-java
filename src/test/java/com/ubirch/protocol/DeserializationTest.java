@@ -49,7 +49,8 @@ class DeserializationTest extends ProtocolFixtures {
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         ProtocolMessage pm = decoder.decode(message);
 
-        assertEquals(CHAINED, pm.version);
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle message");
+        assertEquals(CHAINED & 0x0f, pm.version & 0x0f);
         assertEquals(UUID.fromString("af931b05-acca-758b-c2aa-eb98d6f93329"), pm.uuid);
         assertEquals(0x54, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);

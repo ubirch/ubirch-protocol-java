@@ -63,10 +63,10 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
 
             packer.packArrayHeader(5 + (pm.getVersion() & 0x0f) - 2);
             packer.packInt(pm.getVersion());
-            packer.packRawStringHeader(16).addPayload(UUIDUtil.uuidToBytes(pm.getUUID()));
+            packer.packBinaryHeader(16).addPayload(UUIDUtil.uuidToBytes(pm.getUUID()));
             switch (pm.getVersion()) {
                 case ProtocolMessage.CHAINED:
-                    packer.packRawStringHeader(64);
+                    packer.packBinaryHeader(64);
                     byte[] chainSignature = pm.getChain();
                     if (chainSignature == null) {
                         packer.addPayload(new byte[64]);
@@ -91,7 +91,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
             byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
             pm.setSigned(dataToSign);
             pm.setSignature(signature);
-            packer.packRawStringHeader(signature.length);
+            packer.packBinaryHeader(signature.length);
             packer.writePayload(signature);
             packer.flush();
             packer.close();

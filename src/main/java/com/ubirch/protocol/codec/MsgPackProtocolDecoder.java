@@ -65,22 +65,26 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
                 pm.setVersion(unpacker.unpackInt());
                 pm.setUUID(UUIDUtil.bytesToUUID(unpacker.readPayload(unpacker.unpackRawStringHeader())));
 
-                switch (pm.getVersion()) {
-                    case ProtocolMessage.CHAINED:
+                if ((pm.getVersion() >> 4) > ProtocolMessage.ubirchProtocolVersion) {
+                    throw new ProtocolException(String.format("unknown protocol version: %d", pm.getVersion() >> 4));
+                }
+
+                switch (pm.getVersion() & 0x0F) {
+                    case ProtocolMessage.CHAINED & 0x0F:
                         pm.setChain(unpacker.readPayload(unpacker.unpackRawStringHeader()));
                         pm.setPayload(mapper.readTree(message).get(4));
                         break;
-                    case ProtocolMessage.SIGNED:
+                    case ProtocolMessage.SIGNED & 0x0F:
                         pm.setPayload(mapper.readTree(message).get(3));
                         break;
                     default:
-                        throw new ProtocolException(String.format("unknown message version: 0x%04x", pm.getVersion()));
+                        throw new ProtocolException(String.format("unknown protocol type: 0x%04x", pm.getVersion() & 0x0F));
                 }
                 pm.setHint(unpacker.unpackInt());
                 unpacker.skipValue();
 
                 // finally store the signed data and signature for later verification
-                pm.setSigned(Arrays.copyOfRange(message, 0, message.length - 67));
+                pm.setSigned(Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes()));
                 pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
 
                 return pm;

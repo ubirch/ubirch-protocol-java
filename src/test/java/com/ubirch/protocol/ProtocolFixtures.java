@@ -50,6 +50,7 @@ public class ProtocolFixtures {
     protected static byte[] expectedSignedMessageJsonHash;
     protected static String expectedSignedMessageJsonWithData;
     protected static List<byte[]> expectedChainedMessages;
+    protected static List<byte[]> expectedChainedMessagesHash;
     protected static List<String> expectedChainedMessagesJson;
     // fixtures used in the test
     private static byte[] EdDSAKeyPrivatePart;
@@ -70,6 +71,10 @@ public class ProtocolFixtures {
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage01").toCharArray()));
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage02").toCharArray()));
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage03").toCharArray()));
+        expectedChainedMessagesHash = new ArrayList<>(3);
+        expectedChainedMessagesHash.add(Hex.decodeHex(fixtures.getProperty("chainMessage01Hash").toCharArray()));
+        expectedChainedMessagesHash.add(Hex.decodeHex(fixtures.getProperty("chainMessage02Hash").toCharArray()));
+        expectedChainedMessagesHash.add(Hex.decodeHex(fixtures.getProperty("chainMessage03Hash").toCharArray()));
 
         expectedSignedMessageJson = fixtures.getProperty("signedMessage.json");
         expectedSignedMessageJsonHash = Hex.decodeHex(fixtures.getProperty("signedMessageHash.json").toCharArray());
@@ -125,9 +130,8 @@ public class ProtocolFixtures {
                 byte[] signature = signEngine.sign();
                 signatures.put(uuid, signature);
 
-                if (logger.isDebugEnabled()) {
-                    logger.debug(String.format("SIGN: (%d) %s", signature.length, Hex.encodeHexString(signature)));
-                }
+                logger.debug(String.format("HASH: (%d) %s", dataToSign.length, Hex.encodeHexString(dataToSign)));
+                logger.debug(String.format("SIGN: (%d) %s", signature.length, Hex.encodeHexString(signature)));
                 return signature;
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
