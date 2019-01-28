@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -67,6 +68,19 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
+    void testCreateSignedMessageWithHash() throws IOException, GeneralSecurityException {
+        Protocol p = new TestProtocol();
+        MessageDigest md = MessageDigest.getInstance("SHA-512");
+        md.update("1".getBytes(), 0, 1);
+
+        ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, md.digest());
+        byte[] message = p.encodeSign(pm, Protocol.Format.MSGPACK_V1);
+        logger.debug(String.format("MESSAGE: %s", Hex.encodeHexString(message)));
+
+        assertArrayEquals(expectedSignedMessageWithHash, message);
+    }
+
+    @Test
     void testCreateChainedMessages() throws GeneralSecurityException, IOException {
         Protocol p = new TestProtocol();
 
@@ -77,6 +91,19 @@ public class ProtocolTest extends ProtocolFixtures {
             logger.debug(String.format("MESSAGE : %s", Hex.encodeHexString(message)));
             assertArrayEquals(expectedChainedMessages.get(i), message, String.format("message %d failed", i + 1));
         }
+    }
+
+    @Test
+    void testCreateChainedMessageWithHash() throws IOException, GeneralSecurityException {
+        Protocol p = new TestProtocol();
+        MessageDigest md = MessageDigest.getInstance("SHA-512");
+        md.update("1".getBytes(), 0, 1);
+
+        ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, testUUID, 0xEF, md.digest());
+        byte[] message = p.encodeSign(pm, Protocol.Format.MSGPACK_V1);
+        logger.debug(String.format("MESSAGE: %s", Hex.encodeHexString(message)));
+
+        assertArrayEquals(expectedChainedMessageWithHash, message);
     }
 
     @Test

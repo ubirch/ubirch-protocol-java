@@ -46,12 +46,14 @@ public class ProtocolFixtures {
     // expected results fixtures (binary encoded)
     protected static byte[] expectedSignedMessage;
     protected static byte[] expectedSignedMessageHash;
+    protected static byte[] expectedSignedMessageWithHash;
     protected static String expectedSignedMessageJson;
     protected static byte[] expectedSignedMessageJsonHash;
     protected static String expectedSignedMessageJsonWithData;
     protected static List<byte[]> expectedChainedMessages;
     protected static List<byte[]> expectedChainedMessagesHash;
     protected static List<String> expectedChainedMessagesJson;
+    protected static byte[] expectedChainedMessageWithHash;
     // fixtures used in the test
     private static byte[] EdDSAKeyPrivatePart;
     private static byte[] EdDSAKeyPublicPart;
@@ -66,6 +68,8 @@ public class ProtocolFixtures {
 
         expectedSignedMessage = Hex.decodeHex(fixtures.getProperty("signedMessage").toCharArray());
         expectedSignedMessageHash = Hex.decodeHex(fixtures.getProperty("signedMessageHash").toCharArray());
+
+        expectedSignedMessageWithHash = Hex.decodeHex(fixtures.getProperty("signedMessageWithHash").toCharArray());
 
         expectedChainedMessages = new ArrayList<>(3);
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage01").toCharArray()));
@@ -84,6 +88,8 @@ public class ProtocolFixtures {
         expectedChainedMessagesJson.add(fixtures.getProperty("chainMessage01.json"));
         expectedChainedMessagesJson.add(fixtures.getProperty("chaindMessage02.json"));
         expectedChainedMessagesJson.add(fixtures.getProperty("chainMessage03.json"));
+
+        expectedChainedMessageWithHash = Hex.decodeHex(fixtures.getProperty("chainedMessageWithHash").toCharArray());
     }
 
     protected byte[] getBinaryFixture(String name) throws IOException {
