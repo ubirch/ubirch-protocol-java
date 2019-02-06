@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.ubirch.protocol.ProtocolMessage.CHAINED;
+import static com.ubirch.protocol.ProtocolMessage.SIGNED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -71,6 +72,45 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(736, values.size());
         assertEquals(3519, (int) values.get(1533846771));
         assertEquals(3914, (int) values.get(1537214378));
+    }
+
+    @Test
+    void testDecodeKeyRegistrationMessage() throws IOException {
+
+        byte[] message = getBinaryFixture("msgpack/v1.0-register.mpack");
+
+        MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
+        ProtocolMessage pm = decoder.decode(message);
+
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle message");
+        assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
+        assertEquals(UUID.fromString("00000000-0000-0000-0000-000000000000"), pm.uuid);
+        assertEquals(0x01, pm.hint);
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, pm.signature);
+
+        logger.debug(pm.getPayload().toString());
+        JsonNode payload = pm.getPayload();
+
+//        byte[] expectedPubKey = new byte[64];
+//        assertEquals("ECC_ED25519", payload.get("algorithm").asText());
+//        assertEquals( 1542793437, payload.get("created").asInt());
+//        assertEquals(16, payload.get("hwDeviceId").asText().length());
+//        assertArrayEquals(new byte[16], payload.get("hwDeviceId").asText().getBytes());
+//        assertArrayEquals(expectedPubKey, payload.get("pubKey").asText().getBytes());
+//        assertArrayEquals(expectedPubKey, payload.get("pubKeyId").asText().getBytes());
+//        assertEquals( 1574329437, payload.get("validNotAfter").asInt());
+//        assertEquals( 1542793437, payload.get("validNotBefore").asInt());
+    }
+
+    public static class KeyRegistrationPayload {
+        protected String algorithm;
+        protected long created;
+        protected byte[] hwDeviceId;
+        protected byte[] pubKey;
+        protected byte[] pubKeyId;
+        protected long validNotAfter;
+        protected long validNotBefore;
     }
 
 }

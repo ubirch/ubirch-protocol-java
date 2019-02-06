@@ -35,8 +35,7 @@ import java.util.Arrays;
  * @author Matthias L. Jugel
  */
 public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
-    // from end: offset in bytes for the signature (including msgpack marker bytes)
-    public static final int SIGNATURE_OFFSET = 67;
+    protected ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
 
     private static MsgPackProtocolDecoder instance = new MsgPackProtocolDecoder();
 
@@ -56,7 +55,6 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
         ByteArrayInputStream in = new ByteArrayInputStream(message);
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(in);
 
-        ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
         ProtocolMessage pm = new ProtocolMessage();
         try {
             ValueType envelopeType = unpacker.getNextFormat().getValueType();
