@@ -20,11 +20,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.codec.MsgPackProtocolDecoder;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -57,15 +60,13 @@ class DeserializationTest extends ProtocolFixtures {
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
-        logger.debug(pm.getPayload().toString());
-        ObjectMapper mapper = new ObjectMapper();
-
         JsonNode payload = pm.getPayload();
-        assertEquals("v1.0.2-PROD-20180326103205 (v5.6.6)", payload.get(0).asText());
+        assertEquals("v1.0.2-PROD-20180326103205 (v5.6.6)", new String(payload.get(0).binaryValue()));
         assertEquals(2766, payload.get(1).asInt());
         assertEquals(3, payload.get(2).asInt());
 
         // the original data contains a map of timestamp:temperature, so we need to map this type accordingly
+        ObjectMapper mapper = new ObjectMapper();
         Map<Integer, Integer> values = mapper.convertValue(payload.get(3), new TypeReference<Map<Integer, Integer>>() {
         });
         // the actual data contains one duplicated timestamp (it contains 737 data points)
@@ -75,7 +76,7 @@ class DeserializationTest extends ProtocolFixtures {
     }
 
     @Test
-    void testDecodeKeyRegistrationMessage() throws IOException {
+    void testDecodeKeyRegistrationMessage() throws IOException, DecoderException {
 
         byte[] message = getBinaryFixture("msgpack/v1.0-register.mpack");
 
@@ -89,28 +90,17 @@ class DeserializationTest extends ProtocolFixtures {
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
-        logger.debug(pm.getPayload().toString());
         JsonNode payload = pm.getPayload();
+        byte[] expectedPubKey = Hex.decodeHex("2c37eee25b08490a9936e0c4d1f8f2091bebdbc3b08e29164e833a33742df91a".toCharArray());
+        assertEquals("ECC_ED25519", new String(payload.get("algorithm").binaryValue(), StandardCharsets.UTF_8));
+        assertEquals( 1542793437, payload.get("created").asInt());
+        assertEquals(16, payload.get("hwDeviceId").binaryValue().length);
+        assertArrayEquals(new byte[16], payload.get("hwDeviceId").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKey").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKeyId").binaryValue());
+        assertEquals( 1574329437, payload.get("validNotAfter").asInt());
+        assertEquals( 1542793437, payload.get("validNotBefore").asInt());
 
-//        byte[] expectedPubKey = new byte[64];
-//        assertEquals("ECC_ED25519", payload.get("algorithm").asText());
-//        assertEquals( 1542793437, payload.get("created").asInt());
-//        assertEquals(16, payload.get("hwDeviceId").asText().length());
-//        assertArrayEquals(new byte[16], payload.get("hwDeviceId").asText().getBytes());
-//        assertArrayEquals(expectedPubKey, payload.get("pubKey").asText().getBytes());
-//        assertArrayEquals(expectedPubKey, payload.get("pubKeyId").asText().getBytes());
-//        assertEquals( 1574329437, payload.get("validNotAfter").asInt());
-//        assertEquals( 1542793437, payload.get("validNotBefore").asInt());
+        logger.debug("protocol message: "+new ObjectMapper().writeValueAsString(pm));
     }
-
-    public static class KeyRegistrationPayload {
-        protected String algorithm;
-        protected long created;
-        protected byte[] hwDeviceId;
-        protected byte[] pubKey;
-        protected byte[] pubKeyId;
-        protected long validNotAfter;
-        protected long validNotBefore;
-    }
-
 }
