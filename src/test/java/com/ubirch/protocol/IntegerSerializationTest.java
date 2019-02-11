@@ -16,31 +16,20 @@
 
 package com.ubirch.protocol;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.codec.JSONProtocolDecoder;
 import com.ubirch.protocol.codec.JSONProtocolEncoder;
 import com.ubirch.protocol.codec.MsgPackProtocolDecoder;
 import com.ubirch.protocol.codec.MsgPackProtocolEncoder;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-import static com.ubirch.protocol.ProtocolMessage.CHAINED;
 import static com.ubirch.protocol.ProtocolMessage.SIGNED;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
