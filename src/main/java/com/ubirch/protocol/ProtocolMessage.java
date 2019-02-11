@@ -36,7 +36,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 public class ProtocolMessage {
 
     @JsonIgnore
-    public final static int ubirchProtocolVersion = 1;
+    public final static int ubirchProtocolVersion = 2;
 
     @JsonIgnore
     public final static int PLAIN = ((ubirchProtocolVersion << 4) | 0x01);

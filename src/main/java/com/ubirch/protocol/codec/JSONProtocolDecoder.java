@@ -17,6 +17,7 @@
 package com.ubirch.protocol.codec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
@@ -30,10 +31,15 @@ import java.io.IOException;
  */
 public class JSONProtocolDecoder extends ProtocolDecoder<String> {
     private static JSONProtocolDecoder instance = new JSONProtocolDecoder();
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public static JSONProtocolDecoder getDecoder() {
         return instance;
+    }
+
+    private ObjectMapper mapper;
+    JSONProtocolDecoder() {
+        mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true);
     }
 
     public ProtocolMessage decode(String message) throws ProtocolException {

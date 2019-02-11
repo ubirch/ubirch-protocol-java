@@ -76,7 +76,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderEncode() throws NoSuchAlgorithmException, SignatureException, IOException {
+    void testMsgPackProtocolEncoderEncodeSigned() throws NoSuchAlgorithmException, SignatureException, IOException {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
@@ -93,11 +93,49 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
         assertEquals(5, unpacker.unpackArrayHeader());
         assertEquals(ProtocolMessage.SIGNED, unpacker.unpackInt());
-        assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackRawStringHeader()));
+        assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackBinaryHeader()));
         assertEquals(0xEF, unpacker.unpackInt());
         assertEquals(1, unpacker.unpackInt());
         // check the SHA-512 digest of the message (fake signature)
-        assertArrayEquals(expectedSignedMessageHash, unpacker.readPayload(unpacker.unpackRawStringHeader()));
+        assertArrayEquals(expectedSignedMessageHash, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+    }
+
+    @Test
+    void testMsgPackProtocolEncoderEncodeChained() throws NoSuchAlgorithmException, SignatureException, IOException {
+        byte[] lastSignature = new byte[64];
+        for (int i = 0; i < 3; i++) {
+            for (int n = 0; n < lastSignature.length; n++) {
+                lastSignature[n] = (byte) i;
+            }
+            ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, testUUID, lastSignature, 0xEE, i + 1);
+            ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+
+            MessageDigest digest = MessageDigest.getInstance("SHA-512");
+            byte[] msg = encoder.encode(pm, (uuid, data, offset, len) -> {
+                digest.update(data, offset, len);
+                return digest.digest();
+            });
+
+            byte[] expectedMessage = Arrays.copyOfRange(
+                    expectedChainedMessages.get(i), 0,
+                    expectedChainedMessages.get(i).length - 64);
+            for (int n = 0; n < lastSignature.length; n++) {
+                expectedMessage[22 + n] = (byte) i;
+            }
+
+            byte[] actualMessage = Arrays.copyOfRange(msg, 0, msg.length - 64);
+            assertArrayEquals(expectedMessage, actualMessage);
+
+            MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msg);
+            assertEquals(6, unpacker.unpackArrayHeader());
+            assertEquals(ProtocolMessage.CHAINED, unpacker.unpackInt());
+            assertArrayEquals(UUIDUtil.uuidToBytes(testUUID), unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertArrayEquals(lastSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertEquals(0xEE, unpacker.unpackInt());
+            assertEquals(i + 1, unpacker.unpackInt());
+
+            lastSignature = pm.getSignature();
+        }
     }
 
     @Test
