@@ -16,6 +16,7 @@
 
 package com.ubirch.protocol.codec;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
@@ -45,7 +46,14 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     }
 
     private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolDecoder.class);
-    private final ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
+
+    private ObjectMapper mapper;
+
+    @SuppressWarnings("WeakerAccess")
+    MsgPackProtocolDecoder() {
+        mapper = new ObjectMapper(new MessagePackFactory());
+        mapper.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true);
+    }
 
     /**
      * Decode a a protocol message from it's raw data.
@@ -88,7 +96,7 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
                         throw new ProtocolException(String.format("unknown protocol type: 0x%04x", pm.getVersion() & 0x0F));
                 }
                 pm.setHint(unpacker.unpackInt());
-                if(!legacyPayloadDecoding) {
+                if (!legacyPayloadDecoding) {
                     pm.setPayload(mapper.readTree(message).get(envelopeLength - PAYLOAD_OFFSET));
                     unpacker.skipValue();
                 } else {
@@ -128,7 +136,7 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
             case STRING: {
                 int length = unpacker.unpackRawStringHeader();
                 ImmutableStringValue stringValue = ValueFactory.newString(unpacker.readPayload(length), true);
-                if(stringValue.isRawValue()) return BinaryNode.valueOf(stringValue.asRawValue().asByteArray());
+                if (stringValue.isRawValue()) return BinaryNode.valueOf(stringValue.asRawValue().asByteArray());
                 else return TextNode.valueOf(stringValue.asString());
             }
             case BINARY: {

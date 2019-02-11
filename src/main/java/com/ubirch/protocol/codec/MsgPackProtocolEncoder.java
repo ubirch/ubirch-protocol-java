@@ -16,7 +16,9 @@
 
 package com.ubirch.protocol.codec;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import com.ubirch.protocol.ProtocolSigner;
@@ -84,6 +86,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
 
             // write the payload
             ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
+
             mapper.writeValue(out, pm.getPayload());
             byte[] dataToSign = out.toByteArray();
 

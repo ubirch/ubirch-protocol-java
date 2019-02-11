@@ -37,13 +37,14 @@ import static com.ubirch.protocol.ProtocolMessage.SIGNED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- * Add description.
+/**k
+ * Test deserialization of encoded messages already in production.
  *
  * @author Matthias L. Jugel
  */
 
 class DeserializationTest extends ProtocolFixtures {
+    private static final UUID TEST_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private final Logger logger = LoggerFactory.getLogger(DeserializationTest.class);
 
     @Test
@@ -85,7 +86,7 @@ class DeserializationTest extends ProtocolFixtures {
 
         assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
-        assertEquals(UUID.fromString("00000000-0000-0000-0000-000000000000"), pm.uuid);
+        assertEquals(TEST_UUID, pm.uuid);
         assertEquals(0x01, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
@@ -93,14 +94,14 @@ class DeserializationTest extends ProtocolFixtures {
         JsonNode payload = pm.getPayload();
         byte[] expectedPubKey = Hex.decodeHex("2c37eee25b08490a9936e0c4d1f8f2091bebdbc3b08e29164e833a33742df91a".toCharArray());
         assertEquals("ECC_ED25519", new String(payload.get("algorithm").binaryValue(), StandardCharsets.UTF_8));
-        assertEquals( 1542793437, payload.get("created").asInt());
+        assertEquals(1542793437, payload.get("created").asInt());
         assertEquals(16, payload.get("hwDeviceId").binaryValue().length);
         assertArrayEquals(new byte[16], payload.get("hwDeviceId").binaryValue());
         assertArrayEquals(expectedPubKey, payload.get("pubKey").binaryValue());
         assertArrayEquals(expectedPubKey, payload.get("pubKeyId").binaryValue());
-        assertEquals( 1574329437, payload.get("validNotAfter").asInt());
-        assertEquals( 1542793437, payload.get("validNotBefore").asInt());
+        assertEquals(1574329437, payload.get("validNotAfter").asInt());
+        assertEquals(1542793437, payload.get("validNotBefore").asInt());
 
-        logger.debug("protocol message: "+new ObjectMapper().writeValueAsString(pm));
+        logger.debug("protocol message: " + new ObjectMapper().writeValueAsString(pm));
     }
 }
