@@ -62,6 +62,7 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
      * @return the decoded protocol message
      * @throws ProtocolException if the decoding failed
      */
+    @SuppressWarnings("checkstyle:FallThrough")
     @Override
     public ProtocolMessage decode(byte[] message) throws ProtocolException {
         boolean legacyPayloadDecoding = false;
@@ -136,8 +137,11 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
             case STRING: {
                 int length = unpacker.unpackRawStringHeader();
                 ImmutableStringValue stringValue = ValueFactory.newString(unpacker.readPayload(length), true);
-                if (stringValue.isRawValue()) return BinaryNode.valueOf(stringValue.asRawValue().asByteArray());
-                else return TextNode.valueOf(stringValue.asString());
+                if (stringValue.isRawValue()) {
+                    return BinaryNode.valueOf(stringValue.asRawValue().asByteArray());
+                } else {
+                    return TextNode.valueOf(stringValue.asString());
+                }
             }
             case BINARY: {
                 int length = unpacker.unpackBinaryHeader();
