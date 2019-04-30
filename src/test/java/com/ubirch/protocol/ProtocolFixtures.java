@@ -20,7 +20,6 @@ import com.ubirch.crypto.GeneratorKeyFactory;
 import com.ubirch.crypto.PrivKey;
 import com.ubirch.crypto.PubKey;
 import com.ubirch.crypto.utils.Curve;
-import com.ubirch.crypto.utils.Hash;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,7 +29,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.*;
 
 /**
