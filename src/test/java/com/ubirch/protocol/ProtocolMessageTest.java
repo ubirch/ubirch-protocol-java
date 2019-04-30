@@ -29,6 +29,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
@@ -139,7 +140,7 @@ class ProtocolMessageTest extends ProtocolFixtures {
     }
 
     @Test
-    void testProtocolMessageVerifyable() throws ProtocolException, NoSuchAlgorithmException {
+    void testProtocolMessageVerifyable() throws ProtocolException, NoSuchAlgorithmException, InvalidKeyException {
         ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
 
         TestProtocol proto = new TestProtocol();
