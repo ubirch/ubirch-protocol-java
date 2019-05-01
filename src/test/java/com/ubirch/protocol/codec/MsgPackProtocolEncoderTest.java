@@ -34,7 +34,6 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 /**
  * Test the implementations of {@link com.ubirch.protocol.codec.MsgPackProtocolEncoder}.
  *

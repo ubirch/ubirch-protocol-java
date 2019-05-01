@@ -16,13 +16,10 @@
 
 package com.ubirch.protocol;
 
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveSpec;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
+import com.ubirch.crypto.GeneratorKeyFactory;
+import com.ubirch.crypto.PrivKey;
+import com.ubirch.crypto.PubKey;
+import com.ubirch.crypto.utils.Curve;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,7 +29,10 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.*;
 
 /**
@@ -109,20 +109,16 @@ public class ProtocolFixtures {
     protected class TestProtocol extends Protocol {
         final byte[] zeroSignature = new byte[64];
         private final Logger logger = LoggerFactory.getLogger(TestProtocol.class);
-        private KeyPair keypair;
-        private EdDSAEngine signEngine;
+        private PrivKey privateKey;
+        private PubKey publicKey;
         private MessageDigest sha512;
         private Map<UUID, byte[]> signatures = new HashMap<>();
 
-        TestProtocol() throws NoSuchAlgorithmException {
+        TestProtocol() throws NoSuchAlgorithmException, InvalidKeyException {
             super();
-            EdDSANamedCurveSpec spec = EdDSANamedCurveTable.getByName(EdDSANamedCurveTable.CURVE_ED25519_SHA512);
-            EdDSAPublicKey publicKey = new EdDSAPublicKey(new EdDSAPublicKeySpec(EdDSAKeyPublicPart, spec));
-            EdDSAPrivateKey privateKey = new EdDSAPrivateKey(new EdDSAPrivateKeySpec(EdDSAKeyPrivatePart, spec));
-            keypair = new KeyPair(publicKey, privateKey);
+            privateKey = GeneratorKeyFactory.getPrivKey(EdDSAKeyPrivatePart, Curve.Ed25519);
+            publicKey = GeneratorKeyFactory.getPubKey(EdDSAKeyPublicPart, Curve.Ed25519);
             sha512 = MessageDigest.getInstance("SHA-512");
-            // Yes, we use a separate message digest instance for the sign engine! It is safer this way.
-            signEngine = new EdDSAEngine(MessageDigest.getInstance("SHA-512"));
         }
 
         @Override
@@ -131,39 +127,44 @@ public class ProtocolFixtures {
                 MessageDigest md = (MessageDigest) sha512.clone();
                 md.update(data, offset, len);
                 byte[] dataToSign = md.digest();
-                signEngine.initSign(keypair.getPrivate());
-                signEngine.update(dataToSign, 0, dataToSign.length);
-                byte[] signature = signEngine.sign();
+                byte[] signature = privateKey.sign(dataToSign);
                 signatures.put(uuid, signature);
 
                 logger.debug(String.format("HASH: (%d) %s", dataToSign.length, Hex.encodeHexString(dataToSign)));
                 logger.debug(String.format("SIGN: (%d) %s", signature.length, Hex.encodeHexString(signature)));
                 return signature;
             } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
+                logger.error("unable to clone SHA512 instance", e);
                 return null;
             }
         }
 
         @Override
         public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature)
-                throws SignatureException, InvalidKeyException {
+            throws SignatureException {
             try {
                 MessageDigest md = (MessageDigest) sha512.clone();
                 md.update(data, offset, len);
                 byte[] dataToVerify = md.digest();
 
-                signEngine.initVerify(keypair.getPublic());
-                signEngine.update(dataToVerify, 0, dataToVerify.length);
-
                 if (logger.isDebugEnabled()) {
                     logger.debug(String.format("VRFY: (%d) %s", signature.length, Hex.encodeHexString(signature)));
                 }
 
-                return signEngine.verify(signature);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
+                return publicKey.verify(dataToVerify, signature);
+            } catch (NoSuchAlgorithmException e) {
+                logger.error("algorithm not found", e);
                 return false;
+            } catch (InvalidKeyException e) {
+                logger.error("invalid key", e);
+                return false;
+            } catch (CloneNotSupportedException e) {
+                logger.error("unable to clone SHA512 instance", e);
+                return false;
+            } catch (SignatureException e) {
+                logger.warn(String.format("verification failed: m=%s s=%s",
+                    Hex.encodeHexString(data), Hex.encodeHexString(signature)));
+                throw new SignatureException(e);
             }
         }
 

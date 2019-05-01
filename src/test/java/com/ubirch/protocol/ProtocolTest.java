@@ -27,10 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
+import java.security.*;
 import java.util.Arrays;
 
 import static com.ubirch.protocol.ProtocolMessage.CHAINED;
@@ -107,7 +104,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testVerifySignedMessage() throws NoSuchAlgorithmException {
+    void testVerifySignedMessage() throws NoSuchAlgorithmException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         assertDoesNotThrow(() -> {
@@ -123,7 +120,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testVerifySignedMessageFailsWithBrokenMessage() throws NoSuchAlgorithmException {
+    void testVerifySignedMessageFailsWithBrokenMessage() throws NoSuchAlgorithmException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         for (int i = 0; i < expectedSignedMessage.length - 67; i++) {
@@ -135,7 +132,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testVerifySignedMessageFailsWithBrokenSignature() throws NoSuchAlgorithmException {
+    void testVerifySignedMessageFailsWithBrokenSignature() throws NoSuchAlgorithmException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         byte[] hackedSignedMessage = expectedSignedMessage.clone();
@@ -146,7 +143,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @RepeatedTest(value = 3, name = "testVerifyChainedMessage ({currentRepetition}/{totalRepetitions})")
-    void testVerifyChainedMessage(RepetitionInfo r) throws NoSuchAlgorithmException {
+    void testVerifyChainedMessage(RepetitionInfo r) throws NoSuchAlgorithmException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         assertDoesNotThrow(() -> {
@@ -173,7 +170,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testCreateSignedJSONMessage() throws NoSuchAlgorithmException, IOException, SignatureException {
+    void testCreateSignedJSONMessage() throws NoSuchAlgorithmException, IOException, SignatureException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
@@ -196,7 +193,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testVerifyJSONMessage() throws NoSuchAlgorithmException, IOException, SignatureException {
+    void testVerifyJSONMessage() throws NoSuchAlgorithmException, IOException, SignatureException, InvalidKeyException {
         Protocol p = new TestProtocol();
         ProtocolMessage pm = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
         assertEquals(SIGNED, pm.version);
@@ -205,7 +202,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @RepeatedTest(value = 3, name = "testVerifyChainedMessage ({currentRepetition}/{totalRepetitions})")
-    void testVerifyChainedJSONMessage(RepetitionInfo r) throws NoSuchAlgorithmException {
+    void testVerifyChainedJSONMessage(RepetitionInfo r) throws NoSuchAlgorithmException, InvalidKeyException {
         Protocol p = new TestProtocol();
 
         assertDoesNotThrow(() -> {
@@ -229,7 +226,7 @@ public class ProtocolTest extends ProtocolFixtures {
     }
 
     @Test
-    void testVerifyJSONtoMsgPack() throws NoSuchAlgorithmException, IOException, SignatureException {
+    void testVerifyJSONtoMsgPack() throws NoSuchAlgorithmException, IOException, SignatureException, InvalidKeyException {
         Protocol p = new TestProtocol();
         ProtocolMessage pm = p.decodeVerify(expectedSignedMessageJson.getBytes(StandardCharsets.UTF_8), Protocol.Format.JSON_V1);
         assertEquals(SIGNED, pm.version);
