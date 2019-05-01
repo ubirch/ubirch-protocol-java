@@ -151,8 +151,7 @@ public class ProtocolFixtures {
                     logger.debug(String.format("VRFY: (%d) %s", signature.length, Hex.encodeHexString(signature)));
                 }
 
-                publicKey.verify(dataToVerify, signature);
-                return true;
+                return publicKey.verify(dataToVerify, signature);
             } catch (NoSuchAlgorithmException e) {
                 logger.error("algorithm not found", e);
                 return false;
