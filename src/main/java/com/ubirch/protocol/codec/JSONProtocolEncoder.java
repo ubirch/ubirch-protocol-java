@@ -35,7 +35,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class JSONProtocolEncoder implements ProtocolEncoder<String> {
+public class JSONProtocolEncoder extends ProtocolEncoder<String> {
     private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -56,20 +56,26 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
             throw new IllegalArgumentException("message or signer null");
         }
 
-        int protocolVersion = pm.getVersion();
-        if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
-            throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
-        }
-
         try {
             pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
-            byte[] signature = signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length);
-            pm.setSignature(signature);
+            pm.setSignature(signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length));
+            return encode(pm);
+        } catch (InvalidKeyException e) {
+            throw new ProtocolException("invalid key", e);
+        } catch (JsonProcessingException e) {
+            throw new ProtocolException("json encoding failed", e);
+        }
+    }
+
+    @Override
+    public String encode(ProtocolMessage pm) throws ProtocolException {
+        checkProtocolMessage(pm);
+
+        try {
+            pm.setSignature(pm.getSignature());
             return new String(mapper.writeValueAsBytes(pm), StandardCharsets.UTF_8);
         } catch (JsonProcessingException e) {
             throw new ProtocolException("json encoding failed", e);
-        } catch (InvalidKeyException e) {
-            throw new ProtocolException("invalid key", e);
         }
     }
 }

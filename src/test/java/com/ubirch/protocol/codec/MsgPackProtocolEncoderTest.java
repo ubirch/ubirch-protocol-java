@@ -22,8 +22,6 @@ import com.ubirch.protocol.ProtocolMessage;
 import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -40,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Matthias L. Jugel
  */
 class MsgPackProtocolEncoderTest extends ProtocolFixtures {
-    private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolEncoderTest.class);
-
     @Test
     void testMsgPackProtocolEncoderInstance() {
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
@@ -51,7 +47,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
 
     @Test
     void testMsgPackProtocolEncoderEmptyEnvelopeException() {
-        MsgPackProtocolEncoder encoder = MsgPackProtocolEncoder.getEncoder();
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
         ProtocolMessage pm = new ProtocolMessage();
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
@@ -146,5 +142,46 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> {
             throw new InvalidKeyException("test exception");
         }));
+    }
+
+    @Test
+    void testMsgPackProtocolEncoderMissingSignature() {
+        ProtocolMessage pm = new ProtocolMessage();
+
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("missing signature", e.getMessage());
+    }
+
+    @Test
+    void testMsgPackProtocolEncoderMissingSigned() {
+        ProtocolMessage pm = new ProtocolMessage();
+        pm.setSignature(new byte[64]);
+
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("missing signed data", e.getMessage());
+    }
+
+    @Test
+    void testMsgPackProtocolEncoderRecreate() throws ProtocolException {
+        ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
+
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+
+        assertArrayEquals(expectedSignedMessage, encoder.encode(pm));
+    }
+
+    @Test
+    void testJSONProtocolEncoderRecreateFailsVersion() throws ProtocolException {
+        ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
+        pm.setVersion(0xFF);
+
+        ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("unknown protocol version: 0xff", e.getMessage());
     }
 }

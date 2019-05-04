@@ -34,7 +34,7 @@ import java.security.SignatureException;
  *
  * @author Matthias L. Jugel
  */
-public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
+public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
     private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
     private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
 
@@ -77,27 +77,23 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
                 case ProtocolMessage.SIGNED:
                     break;
                 default:
-                    throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
+                    throw new ProtocolException(String.format("unknown protocol version: 0x%x", pm.getVersion()));
             }
             packer.packInt(pm.getHint());
-            packer.flush();
+            packer.flush(); // make sure everything is in the byte buffer
 
             // write the payload
             ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
-
             mapper.writeValue(out, pm.getPayload());
-            byte[] dataToSign = out.toByteArray();
+            packer.close(); // also closes out
 
-            // sign the hash
+            // sign the message
+            byte[] dataToSign = out.toByteArray();
             byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
             pm.setSigned(dataToSign);
             pm.setSignature(signature);
-            packer.packBinaryHeader(signature.length);
-            packer.writePayload(signature);
-            packer.flush();
-            packer.close();
 
-            return out.toByteArray();
+            return encode(pm);
         } catch (InvalidKeyException e) {
             throw new ProtocolException("invalid key", e);
         } catch (IOException e) {
@@ -107,4 +103,27 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
         }
     }
 
+    public byte[] encode(ProtocolMessage pm) throws ProtocolException {
+        checkProtocolMessage(pm);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream(255);
+        MessagePacker packer = config.newPacker(out);
+
+        try {
+            packer.writePayload(pm.getSigned());
+            if (pm.getVersion() == 1) {
+                packer.packRawStringHeader(pm.getSignature().length);
+            } else {
+                packer.packBinaryHeader(pm.getSignature().length);
+            }
+            packer.writePayload(pm.getSignature());
+
+            packer.flush();
+            packer.close();
+        } catch (IOException e) {
+            throw new ProtocolException("msgpack encoding failed", e);
+        }
+
+        return out.toByteArray();
+    }
 }

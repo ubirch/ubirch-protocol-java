@@ -183,7 +183,6 @@ class DeserializationTest extends ProtocolFixtures {
 
     @Test
     void testDecodeKeyRegistrationMessageECDSAv2() throws IOException, DecoderException {
-
         byte[] message = getBinaryFixture("msgpack/v2.0-ecdsa-register.mpack");
 
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
