@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.protocol.codec.MsgPackProtocolDecoder;
+import com.ubirch.protocol.codec.UUIDUtil;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,8 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 
 class DeserializationTest extends ProtocolFixtures {
-    private static final UUID TEST_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
     private final Logger logger = LoggerFactory.getLogger(DeserializationTest.class);
+
+    private static final UUID TEST_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+    private static final UUID TEST_UUID_ECDSA = UUID.fromString("b99447f2-2114-4044-9eb9-f57759eab90e");
+    private static final UUID TEST_UUID_ECDSA_V2 = UUID.fromString("b99447f2-2114-4044-9eb9-f57759eab91f");
 
     @Test
     void testDecodeTrackleMessage() throws IOException {
@@ -54,7 +61,7 @@ class DeserializationTest extends ProtocolFixtures {
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         ProtocolMessage pm = decoder.decode(message);
 
-        assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle message");
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle (v1) message");
         assertEquals(CHAINED & 0x0f, pm.version & 0x0f);
         assertEquals(UUID.fromString("af931b05-acca-758b-c2aa-eb98d6f93329"), pm.uuid);
         assertEquals(0x54, pm.hint);
@@ -84,7 +91,7 @@ class DeserializationTest extends ProtocolFixtures {
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         ProtocolMessage pm = decoder.decode(message);
 
-        assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle message");
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID, pm.uuid);
         assertEquals(0x01, pm.hint);
@@ -101,6 +108,104 @@ class DeserializationTest extends ProtocolFixtures {
         assertArrayEquals(expectedPubKey, payload.get("pubKeyId").binaryValue());
         assertEquals(1574329437, payload.get("validNotAfter").asInt());
         assertEquals(1542793437, payload.get("validNotBefore").asInt());
+
+        logger.debug("protocol message: " + new ObjectMapper().writeValueAsString(pm));
+    }
+
+    @Test
+    void testDecodeMessageECDSAv1() throws IOException, NoSuchAlgorithmException {
+        byte[] message = getBinaryFixture("msgpack/v1.0-ecdsa-message.mpack");
+
+        MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
+        ProtocolMessage pm = decoder.decode(message);
+
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
+        assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
+        assertEquals(TEST_UUID_ECDSA, pm.uuid);
+        assertEquals(0x00, pm.hint);
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, pm.signature);
+
+        JsonNode payload = pm.getPayload();
+        assertArrayEquals(
+            MessageDigest.getInstance("SHA-256").digest("UBIRCH".getBytes()),
+            Base64.getDecoder().decode(payload.asText()));
+    }
+
+    @Test
+    void testDecodeKeyRegistrationMessageECDSAv1() throws IOException, DecoderException {
+
+        byte[] message = getBinaryFixture("msgpack/v1.0-ecdsa-register.mpack");
+
+        MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
+        ProtocolMessage pm = decoder.decode(message);
+
+        assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
+        assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
+        assertEquals(TEST_UUID_ECDSA, pm.uuid);
+        assertEquals(0x01, pm.hint);
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, pm.signature);
+
+        JsonNode payload = pm.getPayload();
+        byte[] expectedPubKey = Hex.decodeHex("06784eaaf180c1091a135bfe4804306f696fc56a4a75d12e269bfcafb67498d5a963fb72aaaca9fa3209bdf9b34d249c493bd5cd0a4d3763e425c8f461af50a5".toCharArray());
+        assertEquals("ECDSHA_SHA_256", new String(payload.get("algorithm").binaryValue(), StandardCharsets.UTF_8));
+        assertEquals(1550925476, payload.get("created").asInt());
+        assertEquals(16, payload.get("hwDeviceId").binaryValue().length);
+        assertArrayEquals(UUIDUtil.uuidToBytes(TEST_UUID_ECDSA), payload.get("hwDeviceId").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKey").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKeyId").binaryValue());
+        assertEquals(1581683876, payload.get("validNotAfter").asInt());
+        assertEquals(1550925476, payload.get("validNotBefore").asInt());
+
+        logger.debug("protocol message: " + new ObjectMapper().writeValueAsString(pm));
+    }
+
+    @Test
+    void testDecodeMessageECDSAv2() throws IOException, NoSuchAlgorithmException {
+        byte[] message = getBinaryFixture("msgpack/v2.0-ecdsa-message.mpack");
+
+        MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
+        ProtocolMessage pm = decoder.decode(message);
+
+        assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
+        assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
+        assertEquals(TEST_UUID_ECDSA_V2, pm.uuid);
+        assertEquals(0x00, pm.hint);
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, pm.signature);
+
+        JsonNode payload = pm.getPayload();
+        assertArrayEquals(
+            MessageDigest.getInstance("SHA-256").digest("UBIRCH".getBytes()),
+            Base64.getDecoder().decode(payload.asText()));
+    }
+
+    @Test
+    void testDecodeKeyRegistrationMessageECDSAv2() throws IOException, DecoderException {
+
+        byte[] message = getBinaryFixture("msgpack/v2.0-ecdsa-register.mpack");
+
+        MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
+        ProtocolMessage pm = decoder.decode(message);
+
+        assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
+        assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
+        assertEquals(TEST_UUID_ECDSA_V2, pm.uuid);
+        assertEquals(0x01, pm.hint);
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, pm.signature);
+
+        JsonNode payload = pm.getPayload();
+        byte[] expectedPubKey = Hex.decodeHex("a3c14cff55de8459fe4367a98cc399c19bb74615e24b4254742ff0393d71bd8dd55af363480e2ff201d5dca2603cbd9cd68ffea783cec86ff50aabbc540fc75d".toCharArray());
+        assertEquals("ECDSHA_SHA_256", payload.get("algorithm").asText());
+        assertEquals(1550925476, payload.get("created").asInt());
+        assertEquals(16, payload.get("hwDeviceId").binaryValue().length);
+        assertArrayEquals(UUIDUtil.uuidToBytes(TEST_UUID_ECDSA_V2), payload.get("hwDeviceId").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKey").binaryValue());
+        assertArrayEquals(expectedPubKey, payload.get("pubKeyId").binaryValue());
+        assertEquals(1581683876, payload.get("validNotAfter").asInt());
+        assertEquals(1550925476, payload.get("validNotBefore").asInt());
 
         logger.debug("protocol message: " + new ObjectMapper().writeValueAsString(pm));
     }
