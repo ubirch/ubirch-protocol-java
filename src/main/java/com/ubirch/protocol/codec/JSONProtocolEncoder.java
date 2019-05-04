@@ -35,7 +35,7 @@ import java.security.SignatureException;
  * @author Matthias L. Jugel
  */
 @SuppressWarnings("WeakerAccess")
-public class JSONProtocolEncoder implements ProtocolEncoder<String> {
+public class JSONProtocolEncoder extends ProtocolEncoder<String> {
     private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -69,17 +69,7 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
 
     @Override
     public String encode(ProtocolMessage pm) throws ProtocolException {
-        if (pm.getSignature() == null) {
-            throw new ProtocolException("missing signature");
-        }
-        if (pm.getSigned() == null) {
-            throw new ProtocolException("missing signed data");
-        }
-
-        int protocolVersion = pm.getVersion();
-        if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
-            throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
-        }
+        checkProtocolMessage(pm);
 
         try {
             pm.setSignature(pm.getSignature());

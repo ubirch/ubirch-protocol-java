@@ -34,7 +34,7 @@ import java.security.SignatureException;
  *
  * @author Matthias L. Jugel
  */
-public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
+public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
     private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
     private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
 
@@ -77,7 +77,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
                 case ProtocolMessage.SIGNED:
                     break;
                 default:
-                    throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
+                    throw new ProtocolException(String.format("unknown protocol version: 0x%x", pm.getVersion()));
             }
             packer.packInt(pm.getHint());
             packer.flush(); // make sure everything is in the byte buffer
@@ -104,12 +104,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
     }
 
     public byte[] encode(ProtocolMessage pm) throws ProtocolException {
-        if (pm.getSigned() == null) {
-            throw new ProtocolException("missing binary signed data");
-        }
-        if (pm.getSignature() == null) {
-            throw new ProtocolException("missing signature");
-        }
+        checkProtocolMessage(pm);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(255);
         MessagePacker packer = config.newPacker(out);
@@ -131,5 +126,4 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
 
         return out.toByteArray();
     }
-
 }

@@ -37,6 +37,7 @@ public class JSONProtocolDecoder extends ProtocolDecoder<String> {
     }
 
     private ObjectMapper mapper;
+
     JSONProtocolDecoder() {
         mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, true);

@@ -48,7 +48,7 @@ class JSONProtocolEncoderTest extends ProtocolFixtures {
 
     @Test
     void testJSONProtocolEncoderEmptyEnvelopeException() {
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
         ProtocolMessage pm = new ProtocolMessage();
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
@@ -56,14 +56,14 @@ class JSONProtocolEncoderTest extends ProtocolFixtures {
     @Test
     void testJSONProtocolEncoderVersionException() {
         ProtocolMessage pm = new ProtocolMessage(0, testUUID, 0xEF, 1);
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
 
     @Test
     void testJSONProtocolEncoderArgumentExceptions() {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
 
         // check argument exceptions
         assertThrows(IllegalArgumentException.class, () -> encoder.encode(pm, null));
@@ -74,7 +74,7 @@ class JSONProtocolEncoderTest extends ProtocolFixtures {
     @Test
     void testJSONProtocolEncoderEncode() throws NoSuchAlgorithmException, SignatureException, IOException {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
 
         MessageDigest digest = MessageDigest.getInstance("SHA-512");
         String msg = encoder.encode(pm, (uuid, data, offset, len) -> {
@@ -104,7 +104,7 @@ class JSONProtocolEncoderTest extends ProtocolFixtures {
             }
         };
 
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
 
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
@@ -113,10 +113,51 @@ class JSONProtocolEncoderTest extends ProtocolFixtures {
     void testJSONProtocolEncoderInvalidKeyException() {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 2, 3);
 
-        JSONProtocolEncoder encoder = JSONProtocolEncoder.getEncoder();
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
 
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> {
             throw new InvalidKeyException();
         }));
+    }
+
+    @Test
+    void testJSONProtocolEncoderMissingSignature() {
+        ProtocolMessage pm = new ProtocolMessage();
+
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("missing signature", e.getMessage());
+    }
+
+    @Test
+    void testJSONProtocolEncoderMissingSigned() {
+        ProtocolMessage pm = new ProtocolMessage();
+        pm.setSignature(new byte[64]);
+
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("missing signed data", e.getMessage());
+    }
+
+    @Test
+    void testJSONProtocolEncoderRecreate() throws ProtocolException {
+        ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
+
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
+
+        assertEquals(expectedSignedMessageJson, encoder.encode(pm));
+    }
+
+    @Test
+    void testJSONProtocolEncoderRecreateFailsVersion() throws ProtocolException {
+        ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
+        pm.setVersion(0xFF);
+
+        ProtocolEncoder<String> encoder = JSONProtocolEncoder.getEncoder();
+
+        Exception e = assertThrows(ProtocolException.class, () -> encoder.encode(pm));
+        assertEquals("unknown protocol version: 0xff", e.getMessage());
     }
 }

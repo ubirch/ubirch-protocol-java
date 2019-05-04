@@ -28,7 +28,7 @@ import java.security.SignatureException;
  * @param <T> the target type to encode to
  * @author Matthias L. Jugel
  */
-public interface ProtocolEncoder<T> {
+abstract class ProtocolEncoder<T> {
     /**
      * Encode a protocol message into the target type.
      *
@@ -38,7 +38,7 @@ public interface ProtocolEncoder<T> {
      * @throws ProtocolException  if the encoding fails for some reason
      * @throws SignatureException if the signature cannot be created
      */
-    T encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException;
+    abstract T encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException;
 
     /**
      * Re-assemble the protocol message into the target type.
@@ -47,5 +47,19 @@ public interface ProtocolEncoder<T> {
      * @return the encoded message with the existing signature
      * @throws ProtocolException if the message cannot be encoded from the input
      */
-    T encode(ProtocolMessage pm) throws ProtocolException;
+    abstract T encode(ProtocolMessage pm) throws ProtocolException;
+
+    void checkProtocolMessage(ProtocolMessage pm) throws ProtocolException {
+        if (pm.getSignature() == null) {
+            throw new ProtocolException("missing signature");
+        }
+        if (pm.getSigned() == null) {
+            throw new ProtocolException("missing signed data");
+        }
+
+        int protocolVersion = pm.getVersion();
+        if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
+            throw new ProtocolException(String.format("unknown protocol version: 0x%x", pm.getVersion()));
+        }
+    }
 }
