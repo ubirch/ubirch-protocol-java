@@ -80,24 +80,20 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
                     throw new ProtocolException(String.format("unknown protocol version: 0x%04x", pm.getVersion()));
             }
             packer.packInt(pm.getHint());
-            packer.flush();
+            packer.flush(); // make sure everything is in the byte buffer
 
             // write the payload
             ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
-
             mapper.writeValue(out, pm.getPayload());
-            byte[] dataToSign = out.toByteArray();
+            packer.close(); // also closes out
 
-            // sign the hash
+            // sign the message
+            byte[] dataToSign = out.toByteArray();
             byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
             pm.setSigned(dataToSign);
             pm.setSignature(signature);
-            packer.packBinaryHeader(signature.length);
-            packer.writePayload(signature);
-            packer.flush();
-            packer.close();
 
-            return out.toByteArray();
+            return encode(pm);
         } catch (InvalidKeyException e) {
             throw new ProtocolException("invalid key", e);
         } catch (IOException e) {
@@ -130,7 +126,7 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
             packer.flush();
             packer.close();
         } catch (IOException e) {
-            throw new ProtocolException("msgpack reencoding failed", e);
+            throw new ProtocolException("msgpack encoding failed", e);
         }
 
         return out.toByteArray();
