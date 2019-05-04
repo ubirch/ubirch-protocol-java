@@ -107,4 +107,29 @@ public class MsgPackProtocolEncoder implements ProtocolEncoder<byte[]> {
         }
     }
 
+    public byte[] encode(ProtocolMessage pm) throws ProtocolException {
+        if(pm.getSigned() == null) throw new ProtocolException("missing binary signed data");
+        if(pm.getSignature() == null) throw new ProtocolException("missing signature");
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream(255);
+        MessagePacker packer = config.newPacker(out);
+
+        try {
+            packer.writePayload(pm.getSigned());
+            if(pm.getVersion() == 1) {
+                packer.packRawStringHeader(pm.getSignature().length);
+            } else {
+                packer.packBinaryHeader(pm.getSignature().length);
+            }
+            packer.writePayload(pm.getSignature());
+
+            packer.flush();
+            packer.close();
+        } catch (IOException e) {
+            throw new ProtocolException("msgpack reencoding failed", e);
+        }
+
+        return out.toByteArray();
+    }
+
 }

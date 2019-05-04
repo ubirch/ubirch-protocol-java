@@ -39,4 +39,13 @@ public interface ProtocolEncoder<T> {
      * @throws SignatureException if the signature cannot be created
      */
     T encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException;
+
+    /**
+     * Re-assemble the protocol message into the target type.
+     *
+     * @param pm the protocol message to encode from
+     * @return the encoded message with the existing signature
+     * @throws ProtocolException if the message cannot be encoded from the input
+     */
+    T encode(ProtocolMessage pm) throws ProtocolException;
 }

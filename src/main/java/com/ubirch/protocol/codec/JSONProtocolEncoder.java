@@ -50,11 +50,29 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
         return instance;
     }
 
+
+
     @Override
     public String encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
         if (pm == null || signer == null) {
             throw new IllegalArgumentException("message or signer null");
         }
+
+        try {
+            pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+            pm.setSignature(signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length));
+            return encode(pm);
+        } catch (InvalidKeyException e) {
+            throw new ProtocolException("invalid key", e);
+        } catch (JsonProcessingException e) {
+            throw new ProtocolException("json encoding failed", e);
+        }
+    }
+
+    @Override
+    public String encode(ProtocolMessage pm) throws ProtocolException {
+        if(pm.getSignature() == null) throw new ProtocolException("missing signature");
+        if(pm.getSigned() == null) throw new ProtocolException("missing signed data");
 
         int protocolVersion = pm.getVersion();
         if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
@@ -62,14 +80,10 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
         }
 
         try {
-            pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
-            byte[] signature = signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length);
-            pm.setSignature(signature);
+            pm.setSignature(pm.getSignature());
             return new String(mapper.writeValueAsBytes(pm), StandardCharsets.UTF_8);
         } catch (JsonProcessingException e) {
             throw new ProtocolException("json encoding failed", e);
-        } catch (InvalidKeyException e) {
-            throw new ProtocolException("invalid key", e);
         }
     }
 }
