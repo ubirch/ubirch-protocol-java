@@ -50,8 +50,6 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
         return instance;
     }
 
-
-
     @Override
     public String encode(ProtocolMessage pm, ProtocolSigner signer) throws ProtocolException, SignatureException {
         if (pm == null || signer == null) {
@@ -71,8 +69,12 @@ public class JSONProtocolEncoder implements ProtocolEncoder<String> {
 
     @Override
     public String encode(ProtocolMessage pm) throws ProtocolException {
-        if(pm.getSignature() == null) throw new ProtocolException("missing signature");
-        if(pm.getSigned() == null) throw new ProtocolException("missing signed data");
+        if (pm.getSignature() == null) {
+            throw new ProtocolException("missing signature");
+        }
+        if (pm.getSigned() == null) {
+            throw new ProtocolException("missing signed data");
+        }
 
         int protocolVersion = pm.getVersion();
         if (protocolVersion != ProtocolMessage.SIGNED && protocolVersion != ProtocolMessage.CHAINED) {
