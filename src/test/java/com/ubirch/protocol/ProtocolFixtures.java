@@ -165,6 +165,8 @@ public class ProtocolFixtures {
                 logger.warn(String.format("verification failed: m=%s s=%s",
                     Hex.encodeHexString(data), Hex.encodeHexString(signature)));
                 throw new SignatureException(e);
+            } catch (IOException e) {
+                throw new SignatureException(e);
             }
         }
 

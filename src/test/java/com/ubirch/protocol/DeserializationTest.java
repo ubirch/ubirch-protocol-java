@@ -41,7 +41,7 @@ import static com.ubirch.protocol.ProtocolMessage.SIGNED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**k
+/**
  * Test deserialization of encoded messages already in production.
  *
  * @author Matthias L. Jugel
