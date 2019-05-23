@@ -39,7 +39,7 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
     public Protocol() {
     }
 
-    abstract byte[] getLastSignature(UUID uuid);
+    protected abstract byte[] getLastSignature(UUID uuid);
 
     /**
      * Create a new message from the given protocol message and sign it.

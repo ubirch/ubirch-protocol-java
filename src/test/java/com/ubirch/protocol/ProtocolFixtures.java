@@ -171,7 +171,7 @@ public class ProtocolFixtures {
         }
 
         @Override
-        byte[] getLastSignature(UUID uuid) {
+        protected byte[] getLastSignature(UUID uuid) {
             return signatures.getOrDefault(uuid, zeroSignature);
         }
     }

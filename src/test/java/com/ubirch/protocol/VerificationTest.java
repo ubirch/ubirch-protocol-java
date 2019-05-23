@@ -56,7 +56,7 @@ class VerificationTest extends ProtocolFixtures {
 
         ProtocolVerifier verifier = new Protocol() {
             @Override
-            byte[] getLastSignature(UUID uuid) {
+            protected byte[] getLastSignature(UUID uuid) {
                 return new byte[0];
             }
 
