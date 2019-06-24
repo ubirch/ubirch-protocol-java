@@ -25,8 +25,6 @@ import com.ubirch.protocol.ProtocolMessage;
 import org.msgpack.core.*;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.msgpack.value.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,8 +42,6 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     public static MsgPackProtocolDecoder getDecoder() {
         return instance;
     }
-
-    private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolDecoder.class);
 
     private ObjectMapper mapper;
 

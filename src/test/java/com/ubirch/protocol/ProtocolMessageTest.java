@@ -42,18 +42,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class ProtocolMessageTest extends ProtocolFixtures {
 
-    private final String expectedProtocolMessage = "ProtocolMessage(v=0x0001,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,hint=0x02,p={\"key\":\"value\"})";
+    private final String expectedProtocolMessage = "ProtocolMessage(v=0x01,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,hint=0x02,p={\"key\":\"value\"})";
 
     @Test
     void testEmptyProtocolMessage() {
         ProtocolMessage pm = new ProtocolMessage();
-        assertEquals("ProtocolMessage(v=0x0000,hint=0x00)", pm.toString());
+        assertEquals("ProtocolMessage(v=0x00,hint=0x00)", pm.toString());
     }
 
     @Test
     void testSimpleProtocolMessage() {
         ProtocolMessage pm = new ProtocolMessage(1, testUUID, 2, 3);
-        assertEquals("ProtocolMessage(v=0x0001,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,hint=0x02,p=3)", pm.toString());
+        assertEquals("ProtocolMessage(v=0x01,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,hint=0x02,p=3)", pm.toString());
         assertEquals(1, pm.version);
         assertEquals(testUUID, pm.uuid);
         assertEquals(2, pm.hint);
@@ -68,7 +68,7 @@ class ProtocolMessageTest extends ProtocolFixtures {
 
         ProtocolMessage pm = new ProtocolMessage(1, testUUID, expectedChain, 2, 3);
         String expectedMsg = String.format(
-                "ProtocolMessage(v=0x0001,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,chain=%s,hint=0x02,p=3)",
+                "ProtocolMessage(v=0x01,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,chain=%s,hint=0x02,p=3)",
                 new String(Base64.encodeBase64(expectedChain), StandardCharsets.UTF_8)
         );
         assertEquals(expectedMsg, pm.toString());
@@ -92,7 +92,7 @@ class ProtocolMessageTest extends ProtocolFixtures {
         pm.signature = expectedSign;
 
         String expectedMsg = String.format(
-                "ProtocolMessage(v=0x0001,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,chain=%s,hint=0x02,p=3,s=%s)",
+                "ProtocolMessage(v=0x01,6eac4d0b-16e6-4508-8c46-22e7451ea5a1,chain=%s,hint=0x02,p=3,s=%s)",
                 new String(Base64.encodeBase64(expectedChain), StandardCharsets.UTF_8),
                 new String(Base64.encodeBase64(expectedSign), StandardCharsets.UTF_8)
         );

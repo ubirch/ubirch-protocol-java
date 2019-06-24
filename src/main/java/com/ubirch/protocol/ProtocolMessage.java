@@ -86,7 +86,7 @@ public class ProtocolMessage {
     public String toString() {
         Base64.Encoder encoder = Base64.getEncoder();
         return "ProtocolMessage(" +
-                String.format("v=0x%04x", version) +
+                String.format("v=0x%02x", version) +
                 (uuid != null ? "," + uuid : "") +
                 (chain != null ? String.format(",chain=%s", encoder.encodeToString(chain)) : "") +
                 String.format(",hint=0x%02x", hint) +

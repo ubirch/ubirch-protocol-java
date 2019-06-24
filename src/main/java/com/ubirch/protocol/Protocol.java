@@ -58,8 +58,11 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
 
         switch (format) {
             case MSGPACK_V1:
+            case MSGPACK_V2:
+            case MSGPACK:
                 return MsgPackProtocolEncoder.getEncoder().encode(pm, this);
             case JSON_V1:
+            case JSON:
                 return JSONProtocolEncoder.getEncoder().encode(pm, this).getBytes(StandardCharsets.UTF_8);
             default:
                 throw new ProtocolException(String.format("unsupported target format: %s", format));
@@ -79,8 +82,11 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
 
         switch (format) {
             case MSGPACK_V1:
+            case MSGPACK_V2:
+            case MSGPACK:
                 return MsgPackProtocolDecoder.getDecoder().decode(message, this);
             case JSON_V1:
+            case JSON:
                 return JSONProtocolDecoder.getDecoder().decode(new String(message, StandardCharsets.UTF_8), this);
             default:
                 throw new ProtocolException(String.format("unsupported source format: %s", format));
@@ -92,6 +98,6 @@ public abstract class Protocol implements ProtocolSigner, ProtocolVerifier {
     }
 
     public enum Format {
-        MSGPACK_V1, JSON_V1, UNSUPPORTED
+        MSGPACK_V2, MSGPACK_V1, MSGPACK, JSON_V1, JSON, UNSUPPORTED
     }
 }
