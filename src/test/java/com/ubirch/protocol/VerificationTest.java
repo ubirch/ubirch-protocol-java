@@ -21,8 +21,6 @@ import com.ubirch.crypto.GeneratorKeyFactory;
 import com.ubirch.crypto.PubKey;
 import com.ubirch.crypto.utils.Curve;
 import com.ubirch.protocol.codec.MsgPackProtocolDecoder;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -95,8 +93,8 @@ class VerificationTest extends ProtocolFixtures {
     }
 
     @Test
-    void testDecodeVerifyMessageECDSACheck() throws DecoderException, InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
-        byte[] message = Hex.decodeHex("9522c410ffff160c61175b89ac9815aeb52655e000c44065955cd97b908cb8ebeaf2bd5b06e6d52e85ee30d1df90d6cc3f0e59823271c2901bf6aac699be435195ac15beb12fcb7400b9a27b7c702b96dc9b342d4d4cf7c440a26cb824e79d60826e72feb3f9e36a93fb39003e230758a81c89c1abea24f4fedd67132462889bd9344309f18f308f15257ce0ffa3dae991582510afd3c0a777");
+    void testDecodeVerifyMessageECDSACheck() throws InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
+        byte[] message = Base64.decode("lSLEEP//FgxhF1uJrJgVrrUmVeAAxECUnW4kkga5FhldAMYFX7s8ZUTQwYZpV3ObvNKa27c+wVoGfmGN9zQwPbl2hXBq2femGe6NzSjUtQwAIVMXrERexEBKdNrNNjCpzGR/PwNNxxIwjFL++EEoSquEAyW/JW5cPblVnxC+rIgt4+0gUFbWy5IAZcOmmvtDFeP/u/G1lIU7");
         PubKey vk = GeneratorKeyFactory.getPubKey(Base64.decode("kvdvWQ7NOT+HLDcrFqP/UZWy4QVcjfmmkfyzAgg8bitaK/FbHUPeqEji0UmCSlyPk5+4mEaEiZAHnJKOyqUZxA=="), Curve.PRIME256V1);
 
         ProtocolVerifier verifier = new Protocol() {
@@ -127,12 +125,14 @@ class VerificationTest extends ProtocolFixtures {
 
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         ProtocolMessage pm = decoder.decode(message, verifier);
+        logger.info("DATA: " + Base64.toBase64String(pm.getSigned()));
+        logger.info("SIGN: " + Base64.toBase64String(pm.getSignature()));
 
         assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID, pm.uuid);
         assertEquals(0x00, pm.hint);
-        assertArrayEquals(Base64.decode("ZZVc2XuQjLjr6vK9Wwbm1S6F7jDR35DWzD8OWYIyccKQG/aqxpm+Q1GVrBW+sS/LdAC5ont8cCuW3Js0LU1M9w=="), pm.getPayload().binaryValue());
+        assertArrayEquals(Base64.decode("lJ1uJJIGuRYZXQDGBV+7PGVE0MGGaVdzm7zSmtu3PsFaBn5hjfc0MD25doVwatn3phnujc0o1LUMACFTF6xEXg=="), pm.getPayload().binaryValue());
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
