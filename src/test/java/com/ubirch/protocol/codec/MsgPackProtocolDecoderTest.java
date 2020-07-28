@@ -65,6 +65,16 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
+    void testMsgPackProtocolDecoderSignedMessageFromParts() throws ProtocolException {
+        ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
+        assertEquals(ProtocolMessage.SIGNED, pm.getVersion());
+        assertArrayEquals(expectedSimpleSignature, pm.getSignature());
+        byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(expectedSignedMessage);
+        assertArrayEquals(pm.getSigned(), dataToVerifyAndSignature[0]);
+        assertArrayEquals(pm.getSignature(), dataToVerifyAndSignature[1]);
+    }
+
+    @Test
     void testMsgPackProtocolDecoderChainedMessage() throws ProtocolException {
         byte[] lastSignature = new byte[64];
         for (int i = 0; i < 3; i++) {
@@ -78,6 +88,20 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
             byte[] expectedSig = Arrays.copyOfRange(expectedMsg, expectedMsg.length - 64, expectedMsg.length);
             assertArrayEquals(expectedSig, pm.getSignature());
             lastSignature = expectedSig;
+        }
+    }
+
+    @Test
+    void testMsgPackProtocolDecoderChainedMessageFromParts() throws ProtocolException {
+        for (int i = 0; i < 3; i++) {
+            byte[] expectedMsg = expectedChainedMessages.get(i);
+            ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedMsg);
+            assertEquals(ProtocolMessage.CHAINED, pm.getVersion());
+            byte[] expectedSig = Arrays.copyOfRange(expectedMsg, expectedMsg.length - 64, expectedMsg.length);
+            assertArrayEquals(expectedSig, pm.getSignature());
+            byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(expectedMsg);
+            assertArrayEquals(pm.getSigned(), dataToVerifyAndSignature[0]);
+            assertArrayEquals(pm.getSignature(), dataToVerifyAndSignature[1]);
         }
     }
 
