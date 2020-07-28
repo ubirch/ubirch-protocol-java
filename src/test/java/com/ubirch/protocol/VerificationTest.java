@@ -36,6 +36,7 @@ import java.util.UUID;
 import static com.ubirch.protocol.ProtocolMessage.SIGNED;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test deserialization of encoded messages already in production.
@@ -93,6 +94,49 @@ class VerificationTest extends ProtocolFixtures {
     }
 
     @Test
+    void testDecodeVerifyMessageECDSAv2FromParts() throws IOException, InvalidKeyException, NoSuchAlgorithmException, SignatureException {
+        byte[] message = getBinaryFixture("msgpack/v2.0-ecdsa-message-1.mpack");
+        PubKey vk = GeneratorKeyFactory.getPubKey(Base64.decode("kvdvWQ7NOT+HLDcrFqP/UZWy4QVcjfmmkfyzAgg8bitaK/FbHUPeqEji0UmCSlyPk5+4mEaEiZAHnJKOyqUZxA=="), Curve.PRIME256V1);
+
+        ProtocolVerifier verifier = new Protocol() {
+            @Override
+            protected byte[] getLastSignature(UUID uuid) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] sign(UUID uuid, byte[] data, int offset, int len) {
+                return new byte[0];
+            }
+
+            @Override
+            public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException, InvalidKeyException {
+                try {
+                    byte[] dataToVerify = new byte[len];
+                    System.arraycopy(message, offset, dataToVerify, 0, len);
+
+                    return vk.verify(dataToVerify, signature);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new InvalidKeyException(e);
+                } catch (IOException e) {
+                    throw new SignatureException(e);
+                }
+            }
+        };
+
+        byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(message);
+
+        byte[] dataToVerify = dataToVerifyAndSignature[0];
+        byte[] signature = dataToVerifyAndSignature[1];
+
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, signature);
+        boolean verify = verifier.verify(UUID.randomUUID(), dataToVerify, 0, dataToVerify.length, signature);
+        assertTrue(verify);
+
+    }
+
+    @Test
     void testDecodeVerifyMessageECDSACheck() throws InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
         byte[] message = Base64.decode("lSLEEP//FgxhF1uJrJgVrrUmVeAAxECUnW4kkga5FhldAMYFX7s8ZUTQwYZpV3ObvNKa27c+wVoGfmGN9zQwPbl2hXBq2femGe6NzSjUtQwAIVMXrERexEBKdNrNNjCpzGR/PwNNxxIwjFL++EEoSquEAyW/JW5cPblVnxC+rIgt4+0gUFbWy5IAZcOmmvtDFeP/u/G1lIU7");
         PubKey vk = GeneratorKeyFactory.getPubKey(Base64.decode("kvdvWQ7NOT+HLDcrFqP/UZWy4QVcjfmmkfyzAgg8bitaK/FbHUPeqEji0UmCSlyPk5+4mEaEiZAHnJKOyqUZxA=="), Curve.PRIME256V1);
@@ -138,4 +182,47 @@ class VerificationTest extends ProtocolFixtures {
 
         logger.debug("protocol message: " + new ObjectMapper().writeValueAsString(pm));
     }
+
+    @Test
+    void testDecodeVerifyMessageECDSACheckFromParts() throws InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
+        byte[] message = Base64.decode("lSLEEP//FgxhF1uJrJgVrrUmVeAAxECUnW4kkga5FhldAMYFX7s8ZUTQwYZpV3ObvNKa27c+wVoGfmGN9zQwPbl2hXBq2femGe6NzSjUtQwAIVMXrERexEBKdNrNNjCpzGR/PwNNxxIwjFL++EEoSquEAyW/JW5cPblVnxC+rIgt4+0gUFbWy5IAZcOmmvtDFeP/u/G1lIU7");
+        PubKey vk = GeneratorKeyFactory.getPubKey(Base64.decode("kvdvWQ7NOT+HLDcrFqP/UZWy4QVcjfmmkfyzAgg8bitaK/FbHUPeqEji0UmCSlyPk5+4mEaEiZAHnJKOyqUZxA=="), Curve.PRIME256V1);
+
+        ProtocolVerifier verifier = new Protocol() {
+            @Override
+            protected byte[] getLastSignature(UUID uuid) {
+                return new byte[0];
+            }
+
+            @Override
+            public byte[] sign(UUID uuid, byte[] data, int offset, int len) {
+                return new byte[0];
+            }
+
+            @Override
+            public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException, InvalidKeyException {
+                try {
+                    byte[] dataToVerify = new byte[len];
+                    System.arraycopy(message, offset, dataToVerify, 0, len);
+
+                    return vk.verify(dataToVerify, signature);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new InvalidKeyException(e);
+                } catch (IOException e) {
+                    throw new SignatureException(e);
+                }
+            }
+        };
+
+        byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(message);
+        byte[] dataToVerify = dataToVerifyAndSignature[0];
+        byte[] signature = dataToVerifyAndSignature[1];
+
+        byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
+        assertArrayEquals(expectedSignature, signature);
+        boolean verify = verifier.verify(UUID.randomUUID(), dataToVerify, 0, dataToVerify.length, signature);
+        assertTrue(verify);
+
+    }
+
 }

@@ -52,7 +52,7 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     }
 
     /**
-     * Decode a a protocol message from it's raw data.
+     * Decode a protocol message from it's raw data.
      *
      * @param message the raw protocol message in msgpack format
      * @return the decoded protocol message
@@ -105,6 +105,41 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
                 pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
 
                 return pm;
+            } else {
+                throw new ProtocolException(String.format("unknown msgpack envelope format: %s[%d]", envelopeType.name(), envelopeLength));
+            }
+        } catch (MessagePackException e) {
+            throw new ProtocolException("msgpack decoding failed", e);
+        } catch (IOException e) {
+            throw new ProtocolException(String.format("msgpack data corrupt at position %d", unpacker.getTotalReadBytes()), e);
+        }
+    }
+
+    /**
+     * Extracts the signed part and the signature out of the message pack without materializing.
+     * @param message the raw protocol message in msgpack format
+     * @return an array of arrays where the first element is the signed data and the second element is the signature.
+     * @throws ProtocolException if the fast extraction fails
+     */
+    public byte[][] getDataToVerifyAndSignature(byte[] message) throws ProtocolException {
+        ByteArrayInputStream in = new ByteArrayInputStream(message);
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(in);
+
+        try {
+
+            ValueType envelopeType = unpacker.getNextFormat().getValueType();
+            int envelopeLength = unpacker.unpackArrayHeader();
+            if (envelopeLength > 4 && envelopeLength < 7) {
+
+                //We skip through the values up to the signature.
+                for (int i = 0; i < envelopeLength - 1; i++) {
+                    unpacker.skipValue();
+                }
+
+                byte[] signedBytes = Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes());
+                byte[] signatureBytes = unpacker.readPayload(unpacker.unpackRawStringHeader());
+
+                return new byte[][]{signedBytes, signatureBytes};
             } else {
                 throw new ProtocolException(String.format("unknown msgpack envelope format: %s[%d]", envelopeType.name(), envelopeLength));
             }
