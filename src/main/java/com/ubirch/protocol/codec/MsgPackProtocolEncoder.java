@@ -16,18 +16,18 @@
 
 package com.ubirch.protocol.codec;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import com.ubirch.protocol.ProtocolSigner;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
+import java.util.Base64;
 
 /**
  * The default msgpack protocol encoder.
@@ -36,11 +36,34 @@ import java.security.SignatureException;
  */
 public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
     private static MessagePack.PackerConfig config = new MessagePack.PackerConfig().withStr8FormatSupport(false);
-    private static MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
+    private static final MsgPackProtocolEncoder instance = new MsgPackProtocolEncoder();
 
     public static MsgPackProtocolEncoder getEncoder() {
         return instance;
     }
+
+    final private MsgPackProtocolSigning protocolSigning = new MsgPackProtocolSigning() {
+        @Override
+        public void payloadConsumer(MessagePacker packer, ProtocolMessage pm, ByteArrayOutputStream out) throws IOException {
+            // json4s
+            // ------
+            // To be able to return the payload as just bytes and not as base64 values, we have to
+            // explicitly try to decode and pack the data in the msgpack.
+            // There seems to be a limitation with the way json4s handles binary nodes.
+            // https://gitlab.com/ubirch/ubirch-kafka-envelope/-/blob/master/src/main/scala/com/ubirch/kafka/package.scala#L166
+            if (pm.getPayload() instanceof TextNode) {
+                // write the payload
+                try {
+                    byte[] bytes = Base64.getDecoder().decode(pm.getPayload().asText());
+                    packer.packBinaryHeader(bytes.length).addPayload(bytes);
+                } catch (Exception e) {
+                    super.payloadConsumer(packer, pm, out);
+                }
+            } else {
+                super.payloadConsumer(packer, pm, out);
+            }
+        }
+    };
 
     /**
      * Encodes this protocol message into the msgpack format. Modifies the given ProtocolMessage, filling
@@ -58,42 +81,7 @@ public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
         }
 
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream(255);
-            MessagePacker packer = config.newPacker(out);
-
-            packer.packArrayHeader(5 + (pm.getVersion() & 0x0f) - 2);
-            packer.packInt(pm.getVersion());
-            packer.packBinaryHeader(16).addPayload(UUIDUtil.uuidToBytes(pm.getUUID()));
-            switch (pm.getVersion()) {
-                case ProtocolMessage.CHAINED:
-                    packer.packBinaryHeader(64);
-                    byte[] chainSignature = pm.getChain();
-                    if (chainSignature == null) {
-                        packer.addPayload(new byte[64]);
-                    } else {
-                        packer.addPayload(chainSignature);
-                    }
-                    break;
-                case ProtocolMessage.SIGNED:
-                    break;
-                default:
-                    throw new ProtocolException(String.format("unknown protocol version: 0x%x", pm.getVersion()));
-            }
-            packer.packInt(pm.getHint());
-            packer.flush(); // make sure everything is in the byte buffer
-
-            // write the payload
-            ObjectMapper mapper = new ObjectMapper(new MessagePackFactory());
-            mapper.writeValue(out, pm.getPayload());
-            packer.close(); // also closes out
-
-            // sign the message
-            byte[] dataToSign = out.toByteArray();
-            byte[] signature = signer.sign(pm.getUUID(), dataToSign, 0, dataToSign.length);
-            pm.setSigned(dataToSign);
-            pm.setSignature(signature);
-
-            return encode(pm);
+            return encode(protocolSigning.sign(pm, signer));
         } catch (InvalidKeyException e) {
             throw new ProtocolException("invalid key", e);
         } catch (IOException e) {
