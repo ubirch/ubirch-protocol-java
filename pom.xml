@@ -74,14 +74,14 @@
 
         <ubirch-crypto.version>2.0.6</ubirch-crypto.version>
         <jackson.version>2.13.3</jackson.version>
-        <msgpack-core.version>0.8.16</msgpack-core.version>
-        <commons-codec.version>1.11</commons-codec.version>
+        <msgpack-core.version>0.9.1</msgpack-core.version>
+        <commons-codec.version>1.13</commons-codec.version>
         <checkstyle.version>10.3</checkstyle.version>
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
 
         <!-- Logging -->
-        <slf4j-api.version>1.7.25</slf4j-api.version>
-        <logback-classic.version>1.2.3</logback-classic.version>
+        <slf4j-api.version>1.7.36</slf4j-api.version>
+        <logback-classic.version>1.2.11</logback-classic.version>
         <junit.jupiter.version>5.2.0</junit.jupiter.version>
         <junit.platform.version>1.2.0</junit.platform.version>
     </properties>
