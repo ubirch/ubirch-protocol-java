@@ -18,8 +18,8 @@ package com.ubirch.protocol.codec;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import com.ubirch.protocol.ProtocolMessageViews;
@@ -37,12 +37,12 @@ import java.security.SignatureException;
 @SuppressWarnings("WeakerAccess")
 public class JSONProtocolEncoder extends ProtocolEncoder<String> {
     private static JSONProtocolEncoder instance = new JSONProtocolEncoder();
-    private ObjectMapper mapper = new ObjectMapper();
+    private JsonMapper mapper = JsonMapper.builder()
+            .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+            .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false).build();
 
     public JSONProtocolEncoder() {
-        mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
         mapper.setConfig(mapper.getSerializationConfig().withView(ProtocolMessageViews.Default.class));
     }
 
@@ -57,7 +57,7 @@ public class JSONProtocolEncoder extends ProtocolEncoder<String> {
         }
 
         try {
-            pm.setSigned(mapper.writeValueAsBytes(pm.getPayload()));
+            pm.setSigned(this.mapper.writeValueAsBytes(pm.getPayload()));
             pm.setSignature(signer.sign(pm.getUUID(), pm.getSigned(), 0, pm.getSigned().length));
             return encode(pm);
         } catch (InvalidKeyException e) {
