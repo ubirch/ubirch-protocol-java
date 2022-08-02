@@ -20,8 +20,6 @@ import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolFixtures;
 import com.ubirch.protocol.ProtocolMessage;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
