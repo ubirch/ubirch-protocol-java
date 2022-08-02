@@ -19,6 +19,7 @@ package com.ubirch.protocol.codec;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolFixtures;
 import com.ubirch.protocol.ProtocolMessage;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
@@ -29,7 +30,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.util.Arrays;
+import java.util.UUID;
 
+import static com.ubirch.protocol.codec.ProtocolHints.HASHED_TRACKLE_MSG_PACK_HINT;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -38,29 +41,30 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Matthias L. Jugel
  */
 class MsgPackProtocolEncoderTest extends ProtocolFixtures {
+
     @Test
-    void testMsgPackProtocolEncoderInstance() {
+    void testInstance() {
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
         assertNotNull(encoder, "encoder should not be null");
         assertEquals(encoder, MsgPackProtocolEncoder.getEncoder(), "encoder should be a singleton");
     }
 
     @Test
-    void testMsgPackProtocolEncoderEmptyEnvelopeException() {
+    void testEmptyEnvelopeException() {
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
         ProtocolMessage pm = new ProtocolMessage();
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
 
     @Test
-    void testMsgPackProtocolEncoderVersionException() {
+    void testVersionException() {
         ProtocolMessage pm = new ProtocolMessage(0, testUUID, 0xEF, 1);
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
         assertThrows(ProtocolException.class, () -> encoder.encode(pm, (uuid, data, offset, len) -> null));
     }
 
     @Test
-    void testMsgPackProtocolEncoderArgumentExceptions() {
+    void testArgumentExceptions() {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
@@ -71,7 +75,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderEncodeSigned() throws NoSuchAlgorithmException, SignatureException, IOException {
+    void testEncodeSigned() throws NoSuchAlgorithmException, SignatureException, IOException {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 0xEF, 1);
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
 
@@ -96,7 +100,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderEncodeChained() throws NoSuchAlgorithmException, SignatureException, IOException {
+    void testEncodeChained() throws NoSuchAlgorithmException, SignatureException, IOException {
         byte[] lastSignature = new byte[64];
         for (int i = 0; i < 3; i++) {
             for (int n = 0; n < lastSignature.length; n++) {
@@ -134,7 +138,36 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderInvalidKeyException() {
+    void testEncodeHashedTrackleMsg() {
+        UUID trackleId = UUID.fromString("d3407cca-cbfa-474d-8d57-433643eb1e58");
+        byte[] prevSignature = new byte[64];
+        try {
+            prevSignature  = Hex.decodeHex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+            ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, trackleId, prevSignature, HASHED_TRACKLE_MSG_PACK_HINT, expectedTrackleSigned);
+            ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
+            pm.setSignature(expectedTrackleSignature);
+            pm.setSigned(pm.getPayload().binaryValue());
+
+            byte[] msgPack = encoder.encode(pm);
+
+            assertArrayEquals(hashedTrackleMessage, msgPack);
+
+            MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msgPack);
+            assertEquals(6, unpacker.unpackArrayHeader());
+            assertEquals(ProtocolMessage.CHAINED, unpacker.unpackInt());
+            assertArrayEquals(UUIDUtil.uuidToBytes(trackleId), unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertArrayEquals(prevSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertEquals(HASHED_TRACKLE_MSG_PACK_HINT, unpacker.unpackInt());
+            assertArrayEquals(expectedTrackleSigned, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertArrayEquals(expectedTrackleSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+        } catch ( Exception e) {
+            fail("decoding previous signature failed");
+            Arrays.fill(prevSignature, (byte) 9);
+        }
+    }
+
+    @Test
+    void testInvalidKeyException() {
         ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.SIGNED, testUUID, 2, 3);
 
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
@@ -145,7 +178,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderMissingSignature() {
+    void testMissingSignature() {
         ProtocolMessage pm = new ProtocolMessage();
 
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
@@ -155,7 +188,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderMissingSigned() {
+    void testMissingSigned() {
         ProtocolMessage pm = new ProtocolMessage();
         pm.setSignature(new byte[64]);
 
@@ -166,7 +199,7 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolEncoderRecreate() throws ProtocolException {
+    void testRecreate() throws ProtocolException {
         ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
 
         ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();

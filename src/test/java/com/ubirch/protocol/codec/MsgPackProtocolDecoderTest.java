@@ -35,26 +35,25 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author Matthias L. Jugel
  */
 class MsgPackProtocolDecoderTest extends ProtocolFixtures {
-    private final Logger logger = LoggerFactory.getLogger(MsgPackProtocolDecoderTest.class);
 
     private static final byte[] expectedSimpleSignature =
             Arrays.copyOfRange(expectedSignedMessage, expectedSignedMessage.length - 64, expectedSignedMessage.length);
 
     @Test
-    void testMsgPackProtocolDecoderInstance() {
+    void testInstance() {
         ProtocolDecoder<byte[]> decoder = MsgPackProtocolDecoder.getDecoder();
         assertNotNull(decoder, "decoder should not be null");
         assertEquals(decoder, MsgPackProtocolDecoder.getDecoder(), "decoder should be a singleton");
     }
 
     @Test
-    void testMsgPackProtocolDecoderBrokenMsgPack() {
+    void testBrokenMsgPack() {
         assertThrows(ProtocolException.class, () ->
                 MsgPackProtocolDecoder.getDecoder().decode(new byte[]{(byte) 0xEF, 44}));
     }
 
     @Test
-    void testMsgPackProtocolDecoderSignedMessage() throws ProtocolException {
+    void testSignedMessage() throws ProtocolException {
         ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
         assertEquals(ProtocolMessage.SIGNED, pm.getVersion());
         assertEquals(testUUID, pm.getUUID());
@@ -65,7 +64,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderSignedMessageFromParts() throws ProtocolException {
+    void testSignedMessageFromParts() throws ProtocolException {
         ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedSignedMessage);
         assertEquals(ProtocolMessage.SIGNED, pm.getVersion());
         assertArrayEquals(expectedSimpleSignature, pm.getSignature());
@@ -75,7 +74,19 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderChainedMessage() throws ProtocolException {
+    void testDecodeHashedTrackleMsgPack() throws ProtocolException {
+        ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(hashedTrackleMessage);
+        assertEquals(ProtocolMessage.CHAINED, pm.getVersion());
+        assertArrayEquals(expectedTrackleSignature, pm.getSignature());
+        byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(hashedTrackleMessage);
+        assertArrayEquals(pm.getSigned(), dataToVerifyAndSignature[0]);
+        assertArrayEquals(pm.getSignature(), dataToVerifyAndSignature[1]);
+        assertArrayEquals(pm.getSigned(), expectedTrackleSigned);
+
+    }
+
+    @Test
+    void testChainedMessage() throws ProtocolException {
         byte[] lastSignature = new byte[64];
         for (int i = 0; i < 3; i++) {
             byte[] expectedMsg = expectedChainedMessages.get(i);
@@ -92,7 +103,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderChainedMessageFromParts() throws ProtocolException {
+    void testChainedMessageFromParts() throws ProtocolException {
         for (int i = 0; i < 3; i++) {
             byte[] expectedMsg = expectedChainedMessages.get(i);
             ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(expectedMsg);
@@ -106,7 +117,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderVerifySignedMessage() throws SignatureException, ProtocolException {
+    void testVerifySignedMessage() throws SignatureException, ProtocolException {
         ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder()
                 .decode(expectedSignedMessage, (uuid, data, offset, len, signature) -> true);
 
@@ -121,14 +132,14 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderVerifySignedMessageFails() {
+    void testVerifySignedMessageFails() {
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         assertThrows(SignatureException.class, () ->
                 decoder.decode(expectedSignedMessage, (uuid, data, offset, len, signature) -> false));
     }
 
     @Test
-    void testMsgPackProtocolDecoderVerifySignedInvalidKey() {
+    void testVerifySignedInvalidKey() {
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         assertThrows(ProtocolException.class, () ->
                 decoder.decode(expectedSignedMessage, (uuid, data, offset, len, signature) -> {
@@ -137,7 +148,7 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testMsgPackProtocolDecoderVerifyMsgPackEnvelopeBroken() {
+    void testVerifyMsgPackEnvelopeBroken() {
         // create a broken json node and set the payload to force a JsonProcessingException
         MsgPackProtocolDecoder decoder = MsgPackProtocolDecoder.getDecoder();
         assertThrows(ProtocolException.class, () ->

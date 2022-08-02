@@ -17,18 +17,21 @@
 package com.ubirch.protocol.codec;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.*;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
-import org.msgpack.core.*;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePackException;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
-import org.msgpack.value.*;
+import org.msgpack.value.ValueType;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+
+import static com.ubirch.protocol.codec.DecoderUtil.decodePayload;
+import static com.ubirch.protocol.codec.ProtocolHints.HASHED_TRACKLE_MSG_PACK_HINT;
 
 /**
  * The default msgpack ubirch protocol decoder.
@@ -63,7 +66,6 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     public ProtocolMessage decode(byte[] message) throws ProtocolException {
         boolean legacyPayloadDecoding = false;
         ByteArrayInputStream in = new ByteArrayInputStream(message);
-
         MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(in);
         ProtocolMessage pm = new ProtocolMessage();
         try {
@@ -101,9 +103,14 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
                 }
 
                 // finally store the signed data and signature for later verification
-                pm.setSigned(Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes()));
+                if (pm.getHint() == HASHED_TRACKLE_MSG_PACK_HINT) {
+                    // in hashed trackle msg packs the payload contains the signed SHA-512 hash
+                    pm.setSigned(pm.getPayload().binaryValue());
+                } else {
+                    // in all other UPPs all bytes including the payload except for the signature are signed
+                    pm.setSigned(Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes()));
+                }
                 pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
-
                 return pm;
             } else {
                 throw new ProtocolException(String.format("unknown msgpack envelope format: %s[%d]", envelopeType.name(), envelopeLength));
@@ -116,7 +123,8 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     }
 
     /**
-     * Extracts the signed part and the signature out of the message pack without materializing.
+     * Extracts the signed part and the signature out of the message pack without materializing the other fields
+     * of the msgPack.
      * @param message the raw protocol message in msgpack format
      * @return an array of arrays where the first element is the signed data and the second element is the signature.
      * @throws ProtocolException if the fast extraction fails
@@ -132,11 +140,21 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
             if (envelopeLength > 4 && envelopeLength < 7) {
 
                 //We skip through the values up to the signature.
-                for (int i = 0; i < envelopeLength - 1; i++) {
+                for (int i = 0; i < envelopeLength - 3; i++) {
                     unpacker.skipValue();
                 }
 
-                byte[] signedBytes = Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes());
+                byte[] signedBytes;
+                if (unpacker.unpackInt() == HASHED_TRACKLE_MSG_PACK_HINT) {
+                    // in hashed trackle msg packs the payload contains the signed SHA-512 hash
+                    int length = unpacker.unpackBinaryHeader();
+                    signedBytes = unpacker.readPayload(length);
+                } else {
+                    // in all other UPPs all bytes including the payload except for the signature are signed
+                    unpacker.skipValue();
+                    signedBytes = Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes());
+                }
+
                 byte[] signatureBytes = unpacker.readPayload(unpacker.unpackRawStringHeader());
 
                 return new byte[][]{signedBytes, signatureBytes};
@@ -150,58 +168,4 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
         }
     }
 
-    private JsonNode decodePayload(MessageUnpacker unpacker) throws IOException {
-        MessageFormat mf = unpacker.getNextFormat();
-        switch (mf.getValueType()) {
-            case NIL:
-                unpacker.unpackNil();
-                return NullNode.getInstance();
-            case BOOLEAN:
-                return BooleanNode.valueOf(unpacker.unpackBoolean());
-            case INTEGER:
-                if (mf == MessageFormat.UINT64) {
-                    return BigIntegerNode.valueOf(unpacker.unpackBigInteger());
-                }
-                return LongNode.valueOf(unpacker.unpackLong());
-            case FLOAT:
-                return DoubleNode.valueOf(unpacker.unpackDouble());
-            case STRING: {
-                int length = unpacker.unpackRawStringHeader();
-                ImmutableStringValue stringValue = ValueFactory.newString(unpacker.readPayload(length), true);
-                if (stringValue.isRawValue()) {
-                    return BinaryNode.valueOf(stringValue.asRawValue().asByteArray());
-                } else {
-                    return TextNode.valueOf(stringValue.asString());
-                }
-            }
-            case BINARY: {
-                int length = unpacker.unpackBinaryHeader();
-                return BinaryNode.valueOf(unpacker.readPayload(length));
-            }
-            case ARRAY: {
-                int size = unpacker.unpackArrayHeader();
-                List<JsonNode> array = new ArrayList<>(size);
-                for (int i = 0; i < size; i++) {
-                    array.add(decodePayload(unpacker));
-                }
-                return new ArrayNode(null, array);
-            }
-            case MAP: {
-                int size = unpacker.unpackMapHeader();
-                Map<String, JsonNode> kvs = new HashMap<>(size);
-                for (int i = 0; i < size; i++) {
-                    JsonNode kn = decodePayload(unpacker);
-                    String key = kn.isBinary() ? new String(kn.binaryValue()) : kn.asText();
-                    kvs.put(key, decodePayload(unpacker));
-                }
-                return new ObjectNode(null, kvs);
-            }
-            case EXTENSION: {
-                ExtensionTypeHeader extHeader = unpacker.unpackExtensionTypeHeader();
-                return BinaryNode.valueOf(unpacker.readPayload(extHeader.getLength()));
-            }
-            default:
-                throw new MessageNeverUsedFormatException("Unknown value type");
-        }
-    }
 }

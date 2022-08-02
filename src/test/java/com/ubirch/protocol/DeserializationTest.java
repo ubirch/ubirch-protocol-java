@@ -38,6 +38,7 @@ import java.util.UUID;
 
 import static com.ubirch.protocol.ProtocolMessage.CHAINED;
 import static com.ubirch.protocol.ProtocolMessage.SIGNED;
+import static com.ubirch.protocol.codec.ProtocolHints.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -64,7 +65,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(1, pm.version >> 4, "unexpected protocol version for trackle (v1) message");
         assertEquals(CHAINED & 0x0f, pm.version & 0x0f);
         assertEquals(UUID.fromString("af931b05-acca-758b-c2aa-eb98d6f93329"), pm.uuid);
-        assertEquals(0x54, pm.hint);
+        assertEquals(TRACKLE_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -94,7 +95,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID, pm.uuid);
-        assertEquals(0x01, pm.hint);
+        assertEquals(KEY_REGISTRATION_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -122,7 +123,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID_ECDSA, pm.uuid);
-        assertEquals(0x00, pm.hint);
+        assertEquals(BINARY_OR_UNKNOWN_PAYLOAD_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -143,7 +144,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(1, pm.version >> 4, "unexpected protocol version for v1 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID_ECDSA, pm.uuid);
-        assertEquals(0x01, pm.hint);
+        assertEquals(KEY_REGISTRATION_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -171,7 +172,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID_ECDSA_V2, pm.uuid);
-        assertEquals(0x00, pm.hint);
+        assertEquals(BINARY_OR_UNKNOWN_PAYLOAD_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -191,7 +192,7 @@ class DeserializationTest extends ProtocolFixtures {
         assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID_ECDSA_V2, pm.uuid);
-        assertEquals(0x01, pm.hint);
+        assertEquals(KEY_REGISTRATION_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
