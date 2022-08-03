@@ -143,9 +143,9 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
         byte[] prevSignature = new byte[64];
         try {
             prevSignature  = Hex.decodeHex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-            ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, trackleId, prevSignature, HASHED_TRACKLE_MSG_PACK_HINT, expectedTrackleSigned);
+            ProtocolMessage pm = new ProtocolMessage(ProtocolMessage.CHAINED, trackleId, prevSignature, HASHED_TRACKLE_MSG_PACK_HINT, hashedTracklePayload);
             ProtocolEncoder<byte[]> encoder = MsgPackProtocolEncoder.getEncoder();
-            pm.setSignature(expectedTrackleSignature);
+            pm.setSignature(hashedTrackleSignature);
             pm.setSigned(pm.getPayload().binaryValue());
 
             byte[] msgPack = encoder.encode(pm);
@@ -158,8 +158,8 @@ class MsgPackProtocolEncoderTest extends ProtocolFixtures {
             assertArrayEquals(UUIDUtil.uuidToBytes(trackleId), unpacker.readPayload(unpacker.unpackBinaryHeader()));
             assertArrayEquals(prevSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
             assertEquals(HASHED_TRACKLE_MSG_PACK_HINT, unpacker.unpackInt());
-            assertArrayEquals(expectedTrackleSigned, unpacker.readPayload(unpacker.unpackBinaryHeader()));
-            assertArrayEquals(expectedTrackleSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertArrayEquals(hashedTracklePayload, unpacker.readPayload(unpacker.unpackBinaryHeader()));
+            assertArrayEquals(hashedTrackleSignature, unpacker.readPayload(unpacker.unpackBinaryHeader()));
         } catch ( Exception e) {
             fail("decoding previous signature failed");
             Arrays.fill(prevSignature, (byte) 9);

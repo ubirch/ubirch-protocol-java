@@ -56,8 +56,9 @@ public class ProtocolFixtures {
     protected static byte[] expectedChainedMessageWithHash;
     // fixtures used in the test
     protected static byte[] hashedTrackleMessage;
-    protected static byte[] expectedTrackleSignature;
-    protected static byte[] expectedTrackleSigned;
+    protected static byte[] hashedTrackleSignature;
+    protected static byte[] hashedTrackleSigned;
+    protected static byte[] hashedTracklePayload;
 
     private static byte[] EdDSAKeyPrivatePart;
     private static byte[] EdDSAKeyPublicPart;
@@ -75,8 +76,9 @@ public class ProtocolFixtures {
         expectedSignedMessageWithHash = Hex.decodeHex(fixtures.getProperty("signedMessageWithHash").toCharArray());
 
         hashedTrackleMessage = Hex.decodeHex(fixtures.getProperty("hashedTrackleMsg").toCharArray());
-        expectedTrackleSignature = Arrays.copyOfRange(hashedTrackleMessage, hashedTrackleMessage.length - 64, hashedTrackleMessage.length);
-        expectedTrackleSigned = Arrays.copyOfRange(hashedTrackleMessage, hashedTrackleMessage.length - 130, hashedTrackleMessage.length - 66);
+        hashedTrackleSignature = Arrays.copyOfRange(hashedTrackleMessage, hashedTrackleMessage.length - 64, hashedTrackleMessage.length);
+        hashedTrackleSigned = Arrays.copyOfRange(hashedTrackleMessage, 0, hashedTrackleMessage.length - 66);
+        hashedTracklePayload = Arrays.copyOfRange(hashedTrackleMessage,  hashedTrackleMessage.length - 130, hashedTrackleMessage.length - 66);
 
         expectedChainedMessages = new ArrayList<>(3);
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage01").toCharArray()));

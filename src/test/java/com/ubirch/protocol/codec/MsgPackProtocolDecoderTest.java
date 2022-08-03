@@ -75,11 +75,11 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     void testDecodeHashedTrackleMsgPack() throws ProtocolException {
         ProtocolMessage pm = MsgPackProtocolDecoder.getDecoder().decode(hashedTrackleMessage);
         assertEquals(ProtocolMessage.CHAINED, pm.getVersion());
-        assertArrayEquals(expectedTrackleSignature, pm.getSignature());
+        assertArrayEquals(hashedTrackleSignature, pm.getSignature());
         byte[][] dataToVerifyAndSignature = MsgPackProtocolDecoder.getDecoder().getDataToVerifyAndSignature(hashedTrackleMessage);
         assertArrayEquals(pm.getSigned(), dataToVerifyAndSignature[0]);
         assertArrayEquals(pm.getSignature(), dataToVerifyAndSignature[1]);
-        assertArrayEquals(pm.getSigned(), expectedTrackleSigned);
+        assertArrayEquals(pm.getSigned(), hashedTrackleSigned);
     }
 
     @Test
@@ -90,6 +90,16 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     @Test
     void testIsNotHashedTrackleTypePack() {
         assert (!MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgType(expectedSignedMessage));
+    }
+
+    @Test
+    void testSignedIsHashedTrackleTypePack() {
+        assert (MsgPackProtocolDecoder.getDecoder().isSignedOfHashedTrackleMsgType(hashedTrackleSigned));
+    }
+
+    @Test
+    void testSignedIsNotHashedTrackleTypePack() {
+        assert (!MsgPackProtocolDecoder.getDecoder().isSignedOfHashedTrackleMsgType(expectedSignedMessage));
     }
 
     @Test

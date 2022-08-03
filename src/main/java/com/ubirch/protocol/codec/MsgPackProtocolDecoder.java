@@ -103,14 +103,7 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
                     pm.setPayload(decodePayload(unpacker));
                 }
 
-                // finally store the signed data and signature for later verification
-                if (pm.getHint() == HASHED_TRACKLE_MSG_PACK_HINT) {
-                    // in hashed trackle msg packs the payload contains the signed SHA-512 hash
-                    pm.setSigned(pm.getPayload().binaryValue());
-                } else {
-                    // in all other UPPs all bytes including the payload except for the signature are signed
-                    pm.setSigned(Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes()));
-                }
+                pm.setSigned(Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes()));
                 pm.setSignature(unpacker.readPayload(unpacker.unpackRawStringHeader()));
                 return pm;
             } else {
@@ -126,6 +119,15 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
     public boolean isHashedTrackleMsgType(byte[] message) {
         if (message.length > 133) {
             byte[] hint = Arrays.copyOfRange(message, message.length - 133, message.length - 132);
+            return Hex.encodeHexString(hint).equals(Integer.toHexString(HASHED_TRACKLE_MSG_PACK_HINT));
+        } else {
+            return false;
+        }
+    }
+
+    public boolean isSignedOfHashedTrackleMsgType(byte[] message) {
+        if (message.length > 133) {
+            byte[] hint = Arrays.copyOfRange(message, message.length - 67, message.length - 66);
             return Hex.encodeHexString(hint).equals(Integer.toHexString(HASHED_TRACKLE_MSG_PACK_HINT));
         } else {
             return false;
@@ -151,21 +153,11 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
             if (envelopeLength > 4 && envelopeLength < 7) {
 
                 //We skip through the values up to the signature.
-                for (int i = 0; i < envelopeLength - 3; i++) {
+                for (int i = 0; i < envelopeLength - 1; i++) {
                     unpacker.skipValue();
                 }
 
-                byte[] signedBytes;
-                if (unpacker.unpackInt() == HASHED_TRACKLE_MSG_PACK_HINT) {
-                    // in hashed trackle msg packs the payload contains the signed SHA-512 hash
-                    int length = unpacker.unpackBinaryHeader();
-                    signedBytes = unpacker.readPayload(length);
-                } else {
-                    // in all other UPPs all bytes including the payload except for the signature are signed
-                    unpacker.skipValue();
-                    signedBytes = Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes());
-                }
-
+                byte[] signedBytes = Arrays.copyOfRange(message, 0, (int) unpacker.getTotalReadBytes());
                 byte[] signatureBytes = unpacker.readPayload(unpacker.unpackRawStringHeader());
 
                 return new byte[][]{signedBytes, signatureBytes};
