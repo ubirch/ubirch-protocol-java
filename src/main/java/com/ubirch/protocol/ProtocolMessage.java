@@ -47,22 +47,44 @@ public class ProtocolMessage {
 
     @JsonView(ProtocolMessageViews.Default.class)
     protected int version = 0;
+
+    /**
+     * This uuid represents the id of the device registered at Ubirch console and is
+     * also used to identify the key retrieved by the id-service to verify the UPP.
+     */
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.Default.class)
     protected UUID uuid = null;
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.Default.class)
     protected byte[] chain = null;
+
+    /**
+     * The hint represents the payload type of the ubirch msgPack variants as described in this documentation:
+     * https://github.com/ubirch/ubirch-protocol/blob/master/README_PAYLOAD.md#payload-types
+     */
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.Default.class)
     protected int hint = 0;
 
+    /**
+     * Signed contains usually everything of the msgPack except for the signature.
+     * Only in the case of the hashed trackle message packet (hint = 0x56) it only
+     * contains the already SHA-512 hashed payload, as we don't want to include the
+     * original signed payload in this ubirch msgPack version.
+     */
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.WithSignedData.class)
     protected byte[] signed;
+
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.Default.class)
     protected byte[] signature = null;
+
+    /**
+     * The payload here describes the specific field payload of the ubirch protocol basic message format,
+     * as described here: https://github.com/ubirch/ubirch-protocol#basic-message-format
+     */
     @JsonInclude(NON_NULL)
     @JsonView(ProtocolMessageViews.Default.class)
     protected JsonNode payload;
