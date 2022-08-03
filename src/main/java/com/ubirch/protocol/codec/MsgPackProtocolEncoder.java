@@ -16,7 +16,6 @@
 
 package com.ubirch.protocol.codec;
 
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.ubirch.protocol.ProtocolException;
 import com.ubirch.protocol.ProtocolMessage;
 import com.ubirch.protocol.ProtocolSigner;
@@ -27,7 +26,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
-import java.util.Base64;
+
+import static com.ubirch.protocol.codec.EncoderUtil.*;
+import static com.ubirch.protocol.codec.ProtocolHints.HASHED_TRACKLE_MSG_PACK_HINT;
 
 /**
  * The default msgpack protocol encoder.
@@ -42,28 +43,7 @@ public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
         return instance;
     }
 
-    final private MsgPackProtocolSigning protocolSigning = new MsgPackProtocolSigning() {
-        @Override
-        public void payloadConsumer(MessagePacker packer, ProtocolMessage pm, ByteArrayOutputStream out) throws IOException {
-            // json4s
-            // ------
-            // To be able to return the payload as just bytes and not as base64 values, we have to
-            // explicitly try to decode and pack the data in the msgpack.
-            // There seems to be a limitation with the way json4s handles binary nodes.
-            // https://gitlab.com/ubirch/ubirch-kafka-envelope/-/blob/master/src/main/scala/com/ubirch/kafka/package.scala#L166
-            if (pm.getPayload() instanceof TextNode) {
-                // write the payload
-                try {
-                    byte[] bytes = Base64.getDecoder().decode(pm.getPayload().asText());
-                    packer.packBinaryHeader(bytes.length).addPayload(bytes);
-                } catch (Exception e) {
-                    super.payloadConsumer(packer, pm, out);
-                }
-            } else {
-                super.payloadConsumer(packer, pm, out);
-            }
-        }
-    };
+    final private MsgPackProtocolSigning protocolSigning = new MsgPackProtocolSigning();
 
     /**
      * Encodes this protocol message into the msgpack format. Modifies the given ProtocolMessage, filling
@@ -96,9 +76,20 @@ public class MsgPackProtocolEncoder extends ProtocolEncoder<byte[]> {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(255);
         MessagePacker packer = config.newPacker(out);
-
         try {
-            packer.writePayload(pm.getSigned());
+            if (pm.getHint() == HASHED_TRACKLE_MSG_PACK_HINT) {
+                // as for a hashed trackle msg pack getSigned returns only the payload of the UPP
+                // every field has to become packed separately for the hashed trackle msgPack
+                packer.packArrayHeader(6);
+                packVersion(packer, pm);
+                packUUID(packer, pm);
+                packChain(packer, pm);
+                packHint(packer, pm);
+                packPayload(packer, pm, out);
+            } else {
+                packer.writePayload(pm.getSigned());
+            }
+
             if (pm.getVersion() == 1) {
                 packer.packRawStringHeader(pm.getSignature().length);
             } else {

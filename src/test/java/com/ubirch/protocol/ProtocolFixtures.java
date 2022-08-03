@@ -55,6 +55,11 @@ public class ProtocolFixtures {
     protected static List<String> expectedChainedMessagesJson;
     protected static byte[] expectedChainedMessageWithHash;
     // fixtures used in the test
+    protected static byte[] hashedTrackleMessage;
+    protected static byte[] hashedTrackleSignature;
+    protected static byte[] hashedTrackleSigned;
+    protected static byte[] hashedTracklePayload;
+
     private static byte[] EdDSAKeyPrivatePart;
     private static byte[] EdDSAKeyPublicPart;
 
@@ -68,8 +73,12 @@ public class ProtocolFixtures {
 
         expectedSignedMessage = Hex.decodeHex(fixtures.getProperty("signedMessage").toCharArray());
         expectedSignedMessageHash = Hex.decodeHex(fixtures.getProperty("signedMessageHash").toCharArray());
-
         expectedSignedMessageWithHash = Hex.decodeHex(fixtures.getProperty("signedMessageWithHash").toCharArray());
+
+        hashedTrackleMessage = Hex.decodeHex(fixtures.getProperty("hashedTrackleMsg").toCharArray());
+        hashedTrackleSignature = Arrays.copyOfRange(hashedTrackleMessage, hashedTrackleMessage.length - 64, hashedTrackleMessage.length);
+        hashedTrackleSigned = Arrays.copyOfRange(hashedTrackleMessage, 0, hashedTrackleMessage.length - 66);
+        hashedTracklePayload = Arrays.copyOfRange(hashedTrackleMessage,  hashedTrackleMessage.length - 130, hashedTrackleMessage.length - 66);
 
         expectedChainedMessages = new ArrayList<>(3);
         expectedChainedMessages.add(Hex.decodeHex(fixtures.getProperty("chainMessage01").toCharArray()));
@@ -140,8 +149,7 @@ public class ProtocolFixtures {
         }
 
         @Override
-        public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature)
-            throws SignatureException {
+        public boolean verify(UUID uuid, byte[] data, int offset, int len, byte[] signature) throws SignatureException {
             try {
                 MessageDigest md = (MessageDigest) sha512.clone();
                 md.update(data, offset, len);
@@ -162,8 +170,7 @@ public class ProtocolFixtures {
                 logger.error("unable to clone SHA512 instance", e);
                 return false;
             } catch (SignatureException e) {
-                logger.warn(String.format("verification failed: m=%s s=%s",
-                    Hex.encodeHexString(data), Hex.encodeHexString(signature)));
+                logger.warn(String.format("verification failed: m=%s s=%s", Hex.encodeHexString(data), Hex.encodeHexString(signature)));
                 throw new SignatureException(e);
             } catch (IOException e) {
                 throw new SignatureException(e);

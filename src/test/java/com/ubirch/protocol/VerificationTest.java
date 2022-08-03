@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import static com.ubirch.protocol.ProtocolMessage.SIGNED;
+import static com.ubirch.protocol.codec.ProtocolHints.BINARY_OR_UNKNOWN_PAYLOAD_MSG_PACK_HINT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -86,7 +87,7 @@ class VerificationTest extends ProtocolFixtures {
         assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID, pm.uuid);
-        assertEquals(0x00, pm.hint);
+        assertEquals(BINARY_OR_UNKNOWN_PAYLOAD_MSG_PACK_HINT, pm.hint);
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
 
@@ -175,7 +176,7 @@ class VerificationTest extends ProtocolFixtures {
         assertEquals(2, pm.version >> 4, "unexpected protocol version for v2 message");
         assertEquals(SIGNED & 0x0f, pm.version & 0x0f);
         assertEquals(TEST_UUID, pm.uuid);
-        assertEquals(0x00, pm.hint);
+        assertEquals(BINARY_OR_UNKNOWN_PAYLOAD_MSG_PACK_HINT, pm.hint);
         assertArrayEquals(Base64.decode("lJ1uJJIGuRYZXQDGBV+7PGVE0MGGaVdzm7zSmtu3PsFaBn5hjfc0MD25doVwatn3phnujc0o1LUMACFTF6xEXg=="), pm.getPayload().binaryValue());
         byte[] expectedSignature = Arrays.copyOfRange(message, message.length - 64, message.length);
         assertArrayEquals(expectedSignature, pm.signature);
