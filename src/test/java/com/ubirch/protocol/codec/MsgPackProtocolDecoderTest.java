@@ -80,7 +80,26 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
         assertArrayEquals(pm.getSigned(), dataToVerifyAndSignature[0]);
         assertArrayEquals(pm.getSignature(), dataToVerifyAndSignature[1]);
         assertArrayEquals(pm.getSigned(), expectedTrackleSigned);
+    }
 
+    @Test
+    void testIsHashedTrackleTypePack() {
+        assert (MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgType(hashedTrackleMessage));
+    }
+
+    @Test
+    void testIsNotHashedTrackleTypePack() {
+        assert (!MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgType(expectedSignedMessage));
+    }
+
+    @Test
+    void testIsHashedTrackleMsgTypeSafe() throws ProtocolException {
+        assert (MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgTypeSafe(hashedTrackleMessage));
+    }
+
+    @Test
+    void testIsNotHashedTrackleMsgTypeSafe() throws ProtocolException {
+        assert (!MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgTypeSafe(expectedSignedMessage));
     }
 
     @Test
