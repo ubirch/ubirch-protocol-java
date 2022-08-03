@@ -93,16 +93,6 @@ class MsgPackProtocolDecoderTest extends ProtocolFixtures {
     }
 
     @Test
-    void testIsHashedTrackleMsgTypeSafe() throws ProtocolException {
-        assert (MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgTypeSafe(hashedTrackleMessage));
-    }
-
-    @Test
-    void testIsNotHashedTrackleMsgTypeSafe() throws ProtocolException {
-        assert (!MsgPackProtocolDecoder.getDecoder().isHashedTrackleMsgTypeSafe(expectedSignedMessage));
-    }
-
-    @Test
     void testChainedMessage() throws ProtocolException {
         byte[] lastSignature = new byte[64];
         for (int i = 0; i < 3; i++) {

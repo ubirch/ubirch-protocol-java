@@ -132,25 +132,6 @@ public class MsgPackProtocolDecoder extends ProtocolDecoder<byte[]> {
         }
     }
 
-    public boolean isHashedTrackleMsgTypeSafe(byte[] message) throws ProtocolException {
-        ByteArrayInputStream in = new ByteArrayInputStream(message);
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(in);
-        try {
-            ValueType envelopeType = unpacker.getNextFormat().getValueType();
-            if (envelopeType == ValueType.ARRAY) {
-                int envelopeLength = unpacker.unpackArrayHeader();
-                for (int i = 0; i < envelopeLength - 3; i++) {
-                    unpacker.skipValue();
-                }
-                return unpacker.getNextFormat().getValueType() == ValueType.INTEGER && unpacker.unpackInt() == HASHED_TRACKLE_MSG_PACK_HINT;
-            } else {
-                throw new ProtocolException(String.format("Unexpected envelope type %s", envelopeType));
-            }
-        } catch (IOException e) {
-            throw new ProtocolException(String.format("msgpack data corrupt at position %d", unpacker.getTotalReadBytes()), e);
-        }
-    }
-
     /**
      * Extracts the signed part and the signature out of the message pack without materializing the other fields
      * of the msgPack.
