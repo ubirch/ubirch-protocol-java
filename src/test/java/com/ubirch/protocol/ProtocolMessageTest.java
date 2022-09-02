@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.ubirch.protocol.codec.JSONProtocolDecoder;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
@@ -128,10 +129,10 @@ class ProtocolMessageTest extends ProtocolFixtures {
     @Test
     void testProtocolMessageInternalView() throws IOException {
         ProtocolMessage pm = JSONProtocolDecoder.getDecoder().decode(expectedSignedMessageJson);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-        mapper.configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
+        JsonMapper mapper = JsonMapper.builder()
+                .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+                .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+                .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false).build();
         mapper.setConfig(mapper.getSerializationConfig().withView(ProtocolMessageViews.WithSignedData.class));
 
         byte[] internalSerialized = mapper.writeValueAsBytes(pm);

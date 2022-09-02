@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ubirch.crypto.GeneratorKeyFactory;
 import com.ubirch.crypto.PubKey;
 import com.ubirch.crypto.utils.Curve;
+import com.ubirch.crypto.utils.Utils;
 import com.ubirch.protocol.codec.MsgPackProtocolDecoder;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,7 @@ class VerificationTest extends ProtocolFixtures {
                     byte[] dataToVerify = new byte[len];
                     System.arraycopy(message, offset, dataToVerify, 0, len);
 
-                    return vk.verify(dataToVerify, signature);
+                    return vk.verify(dataToVerify, Utils.pointsToASN1(signature));
                 } catch (NoSuchAlgorithmException e) {
                     throw new InvalidKeyException(e);
                 } catch (IOException e) {
@@ -115,7 +116,7 @@ class VerificationTest extends ProtocolFixtures {
                     byte[] dataToVerify = new byte[len];
                     System.arraycopy(message, offset, dataToVerify, 0, len);
 
-                    return vk.verify(dataToVerify, signature);
+                    return vk.verify(dataToVerify, Utils.pointsToASN1(signature));
                 } catch (NoSuchAlgorithmException e) {
                     throw new InvalidKeyException(e);
                 } catch (IOException e) {
@@ -158,7 +159,7 @@ class VerificationTest extends ProtocolFixtures {
                     byte[] dataToVerify = new byte[len];
                     System.arraycopy(message, offset, dataToVerify, 0, len);
 
-                    return vk.verify(dataToVerify, signature);
+                    return vk.verify(dataToVerify, Utils.pointsToASN1(signature));
                 } catch (NoSuchAlgorithmException e) {
                     throw new InvalidKeyException(e);
                 } catch (IOException e) {
@@ -205,7 +206,7 @@ class VerificationTest extends ProtocolFixtures {
                     byte[] dataToVerify = new byte[len];
                     System.arraycopy(message, offset, dataToVerify, 0, len);
 
-                    return vk.verify(dataToVerify, signature);
+                    return vk.verify(dataToVerify, Utils.pointsToASN1(signature));
                 } catch (NoSuchAlgorithmException e) {
                     throw new InvalidKeyException(e);
                 } catch (IOException e) {
